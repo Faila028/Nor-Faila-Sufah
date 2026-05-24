@@ -262,6 +262,17 @@ if uploaded_file is not None:
     # Ubah ke numeric
     data_produk = pd.to_numeric(data_produk)
 
+    if (data_produk <= 0).any():
+
+    st.warning(
+        "Data mengandung nilai 0. "
+        "Dilakukan transformasi +1 agar "
+        "bisa menggunakan Holt-Winters Multiplicative."
+    )
+
+    # Tambahkan konstanta 1
+    data_produk = data_produk + 1
+
     # ==========================================
     # TAMPILKAN DATA PRODUK
     # ==========================================
