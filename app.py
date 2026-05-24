@@ -291,6 +291,10 @@ if uploaded_file is not None:
 
     forecast = fit_model.forecast(jumlah_forecast)
 
+    # Mengubah hasil negatif menjadi 0
+    forecast = forecast.clip(lower=0)
+
+
     st.subheader("Hasil Forecast")
     st.write(forecast)
 
