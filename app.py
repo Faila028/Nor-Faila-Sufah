@@ -4,27 +4,26 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
+
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
 from statsmodels.tsa.holtwinters import ExponentialSmoothing
 
 # ==========================================
-# CONFIG PAGE
+# CONFIG HALAMAN
 # ==========================================
+
 st.set_page_config(
-    page_title="Clustering & Forecasting",
+    page_title="Forecasting Barang",
     layout="wide"
 )
 
-# ==========================================
-# JUDUL
-# ==========================================
-st.title("Analisis Clustering dan Forecasting")
-st.subheader("Metode K-Means dan Holt-Winters Multiplicative")
+st.title("Forecasting dan Clustering Barang")
 
 # ==========================================
 # UPLOAD FILE
 # ==========================================
+
 uploaded_file = st.file_uploader(
     "Upload File Excel",
     type=["xlsx"]
@@ -33,41 +32,47 @@ uploaded_file = st.file_uploader(
 # ==========================================
 # JIKA FILE SUDAH DIUPLOAD
 # ==========================================
+
 if uploaded_file is not None:
 
     # ==========================================
     # MEMBACA FILE EXCEL
     # ==========================================
+
     df = pd.read_excel(uploaded_file)
 
-    # ==========================================
-    # TAMPILKAN DATA AWAL
-    # ==========================================
-    st.write("## Data Awal")
+    st.subheader("Data Awal")
     st.dataframe(df.head())
 
     # ==========================================
-    # CEK KOLOM
+    # CEK NAMA KOLOM
     # ==========================================
-    st.write("## Nama Kolom")
+
+    st.subheader("Nama Kolom")
     st.write(df.columns)
 
     # ==========================================
-    # PREPROCESSING
+    # UBAH FORMAT TANGGAL
     # ==========================================
 
-    # Ubah format tanggal
     df['tgl_input'] = pd.to_datetime(df['tgl_input'])
 
-    # Hapus data keluar = 0
+    # ==========================================
+    # HAPUS DATA KELUAR = 0
+    # ==========================================
+
     df = df[df['keluar'] > 0]
 
-    # Membuat format bulan
+    # ==========================================
+    # MEMBUAT FORMAT BULAN
+    # ==========================================
+
     df['Bulan'] = df['tgl_input'].dt.strftime('%b-%y')
 
     # ==========================================
-    # PIVOT TABLE
+    # MEMBUAT PIVOT TABLE
     # ==========================================
+
     pivot_table = df.pivot_table(
         index='id_produk',
         columns='Bulan',
@@ -77,8 +82,9 @@ if uploaded_file is not None:
     )
 
     # ==========================================
-    # URUTKAN BULAN
+    # URUTAN BULAN
     # ==========================================
+
     urutan_bulan = [
         'Jan-23','Feb-23','Mar-23','Apr-23','May-23','Jun-23',
         'Jul-23','Aug-23','Sep-23','Oct-23','Nov-23','Dec-23',
@@ -88,54 +94,49 @@ if uploaded_file is not None:
 
     pivot_table = pivot_table.reindex(columns=urutan_bulan)
 
-    # ==========================================
-    # TAMPILKAN PIVOT
-    # ==========================================
-    st.write("## Data Pivot Barang Keluar")
+    st.subheader("Pivot Table Barang Keluar")
     st.dataframe(pivot_table)
 
     # ==========================================
-    # DOWNLOAD PIVOT
+    # DOWNLOAD PIVOT TABLE
     # ==========================================
+
     excel_data = pivot_table.to_csv().encode('utf-8')
 
     st.download_button(
         label="Download Pivot Table",
         data=excel_data,
-        file_name='Data_Barang_Keluar_Perbulan.csv',
+        file_name='data_barang_keluar.csv',
         mime='text/csv'
     )
 
     # ==========================================
     # CLUSTERING
     # ==========================================
-    st.write("# Clustering K-Means")
 
-    # Hapus kolom total jika ada
+    st.header("Clustering Produk")
+
     if 'Total' in pivot_table.columns:
         pivot_table = pivot_table.drop(columns=['Total'])
 
-    # Tambahkan total
     pivot_table['Total'] = pivot_table.sum(axis=1)
 
-    # Filter produk
     filtered_data = pivot_table[pivot_table['Total'] > 1]
 
-    # Hapus total lagi
     filtered_data = filtered_data.drop(columns=['Total'])
 
     # ==========================================
-    # NORMALISASI
+    # NORMALISASI DATA
     # ==========================================
-    scaler = StandardScaler()
 
+    scaler = StandardScaler()
     scaled_data = scaler.fit_transform(filtered_data)
 
     # ==========================================
     # ELBOW METHOD
     # ==========================================
-    inertia = []
 
+    inertia = []
     K = range(1, 10)
 
     for k in K:
@@ -143,15 +144,9 @@ if uploaded_file is not None:
         kmeans.fit(scaled_data)
         inertia.append(kmeans.inertia_)
 
-    # ==========================================
-    # GRAFIK ELBOW
-    # ==========================================
-    st.write("## Grafik Elbow")
-
-    fig1, ax1 = plt.subplots(figsize=(8, 5))
+    fig1, ax1 = plt.subplots(figsize=(8,5))
 
     ax1.plot(K, inertia, marker='o')
-
     ax1.set_xlabel('Jumlah Cluster (k)')
     ax1.set_ylabel('Inertia')
     ax1.set_title('Metode Elbow')
@@ -162,6 +157,7 @@ if uploaded_file is not None:
     # ==========================================
     # PILIH JUMLAH CLUSTER
     # ==========================================
+
     jumlah_cluster = st.slider(
         "Pilih Jumlah Cluster",
         min_value=2,
@@ -170,8 +166,9 @@ if uploaded_file is not None:
     )
 
     # ==========================================
-    # K-MEANS
+    # K-MEANS CLUSTERING
     # ==========================================
+
     kmeans = KMeans(
         n_clusters=jumlah_cluster,
         random_state=42
@@ -179,71 +176,35 @@ if uploaded_file is not None:
 
     cluster = kmeans.fit_predict(scaled_data)
 
-    # ==========================================
-    # HASIL CLUSTER
-    # ==========================================
     filtered_data['Cluster'] = cluster
 
-    st.write("## Hasil Clustering")
-    st.dataframe(filtered_data)
+    st.subheader("Hasil Clustering")
+    st.dataframe(filtered_data.head())
 
     # ==========================================
     # JUMLAH PRODUK TIAP CLUSTER
     # ==========================================
-    st.write("## Jumlah Produk Tiap Cluster")
 
-    cluster_count = filtered_data['Cluster'].value_counts()
-
-    st.write(cluster_count)
-
-    # ==========================================
-    # GRAFIK CLUSTER
-    # ==========================================
-    fig2, ax2 = plt.subplots(figsize=(8, 5))
-
-    cluster_count.plot(kind='bar', ax=ax2)
-
-    ax2.set_xlabel('Cluster')
-    ax2.set_ylabel('Jumlah Produk')
-    ax2.set_title('Jumlah Produk Tiap Cluster')
-
-    st.pyplot(fig2)
+    st.subheader("Jumlah Produk per Cluster")
+    st.write(filtered_data['Cluster'].value_counts())
 
     # ==========================================
     # RATA-RATA TOTAL PER CLUSTER
     # ==========================================
+
     filtered_data['Total'] = filtered_data.drop(columns=['Cluster']).sum(axis=1)
 
     cluster_summary = filtered_data.groupby('Cluster')['Total'].mean()
 
-    st.write("## Rata-rata Total Barang Keluar")
+    st.subheader("Rata-rata Total per Cluster")
     st.write(cluster_summary)
-
-    # ==========================================
-    # FAST MOVING
-    # ==========================================
-    st.write("# Fast Moving Product")
-
-    cluster_fast = st.selectbox(
-        "Pilih Cluster Fast Moving",
-        filtered_data['Cluster'].unique()
-    )
-
-    fast_moving = filtered_data[
-        filtered_data['Cluster'] == cluster_fast
-    ]
-
-    st.dataframe(fast_moving)
-
-    st.write("## Daftar Produk")
-    st.write(fast_moving.index.tolist())
 
     # ==========================================
     # FORECASTING
     # ==========================================
-    st.write("# Forecasting Holt-Winters")
 
-    # Pilih produk
+    st.header("Forecasting Holt-Winters")
+
     daftar_produk = filtered_data.index.tolist()
 
     produk = st.selectbox(
@@ -254,84 +215,111 @@ if uploaded_file is not None:
     # ==========================================
     # AMBIL DATA PRODUK
     # ==========================================
+
     data_produk = filtered_data.loc[produk]
 
-    # Hapus cluster dan total
-    data_produk = data_produk.drop(labels=['Cluster', 'Total'])
+    kolom_hapus = []
 
-    # Ubah ke numeric
-    # Ubah ke numeric
-data_produk = pd.to_numeric(data_produk)
+    if 'Cluster' in data_produk.index:
+        kolom_hapus.append('Cluster')
 
-# ==========================================
-# PENYESUAIAN UNTUK MULTIPLICATIVE
-# ==========================================
+    if 'Total' in data_produk.index:
+        kolom_hapus.append('Total')
 
-# Jika ada nilai <= 0
-if (data_produk <= 0).any():
+    data_produk = data_produk.drop(kolom_hapus)
 
-    st.warning(
-        "Data mengandung nilai 0 atau negatif. "
-        "Dilakukan transformasi +1 "
-        "agar metode multiplicative dapat digunakan."
+    # ==========================================
+    # GANTI 0 MENJADI 1
+    # ==========================================
+
+    data_produk = data_produk.replace(0, 1)
+
+    # ==========================================
+    # INDEX TANGGAL
+    # ==========================================
+
+    data_produk.index = pd.date_range(
+        start='2023-01-01',
+        periods=len(data_produk),
+        freq='M'
     )
 
-    data_produk = data_produk + 1
+    # ==========================================
+    # TAMPILKAN DATA AKTUAL
+    # ==========================================
 
-# ==========================================
-# CEK JUMLAH DATA
-# ==========================================
+    fig2, ax2 = plt.subplots(figsize=(12,5))
 
-if len(data_produk) < 24:
-
-    st.warning(
-        "Data kurang dari 24 periode. "
-        "Forecast mungkin kurang optimal."
+    ax2.plot(
+        data_produk.index,
+        data_produk.values,
+        marker='o',
+        label='Data Aktual'
     )
-    # ==========================================
-    # TAMPILKAN DATA PRODUK
-    # ==========================================
-    st.write("## Data Produk")
-    st.write(data_produk)
+
+    ax2.set_title(f'Data Aktual Produk {produk}')
+    ax2.set_xlabel('Periode')
+    ax2.set_ylabel('Jumlah Barang Keluar')
+    ax2.legend()
+    ax2.grid(True)
+
+    st.pyplot(fig2)
 
     # ==========================================
-    # MODEL HOLT-WINTERS
+    # MODEL HOLT WINTERS
     # ==========================================
-    try:
-        model = ExponentialSmoothing(
-            data_produk,
-            trend='add',
-            seasonal='multiplicative',
-            seasonal_periods=12
-        ).fit()
 
-        # Forecast 6 bulan
-        forecast = model.forecast(6)
+    model = ExponentialSmoothing(
+        data_produk,
+        trend='add',
+        seasonal='mul',
+        seasonal_periods=12
+    )
 
-        # ==========================================
-        # HASIL FORECAST
-        # ==========================================
-        st.write("## Hasil Forecast")
-        st.write(forecast)
+    fit_model = model.fit()
 
-        # ==========================================
-        # GRAFIK FORECAST
-        # ==========================================
-        fig3, ax3 = plt.subplots(figsize=(10, 5))
+    # ==========================================
+    # FORECAST
+    # ==========================================
 
-        data_produk.plot(label='Data Aktual', ax=ax3)
-        forecast.plot(label='Forecast', ax=ax3)
+    jumlah_forecast = st.slider(
+        "Jumlah Forecast Bulan",
+        min_value=1,
+        max_value=12,
+        value=6
+    )
 
-        ax3.set_title(f'Forecast Produk {produk}')
-        ax3.set_xlabel('Periode')
-        ax3.set_ylabel('Jumlah Keluar')
+    forecast = fit_model.forecast(jumlah_forecast)
 
-        ax3.legend()
+    st.subheader("Hasil Forecast")
+    st.write(forecast)
 
-        st.pyplot(fig3)
+    # ==========================================
+    # VISUALISASI FORECAST
+    # ==========================================
 
-    except Exception as e:
-        st.error(f"Forecast gagal dilakukan: {e}")
+    fig3, ax3 = plt.subplots(figsize=(12,5))
 
-else:
-    st.info("Silakan upload file Excel terlebih dahulu")
+    ax3.plot(
+        data_produk.index,
+        data_produk.values,
+        marker='o',
+        label='Data Aktual'
+    )
+
+    ax3.plot(
+        forecast.index,
+        forecast.values,
+        marker='o',
+        linestyle='--',
+        label='Forecast Holt-Winters'
+    )
+
+    ax3.set_title(f'Forecast Produk {produk}')
+    ax3.set_xlabel('Periode')
+    ax3.set_ylabel('Jumlah Barang Keluar')
+    ax3.legend()
+    ax3.grid(True)
+
+    st.pyplot(fig3)
+
