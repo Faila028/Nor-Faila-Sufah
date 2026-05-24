@@ -241,7 +241,7 @@ if uploaded_file is not None:
     data_produk.index = pd.date_range(
         start='2023-01-01',
         periods=len(data_produk),
-        freq='M'
+        freq='ME'
     )
 
     # ==========================================
