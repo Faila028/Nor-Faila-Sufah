@@ -227,6 +227,7 @@ df_produk_cluster = pd.DataFrame({
 st.dataframe(df_produk_cluster)
 
 st.write(f"Jumlah Produk: {len(produk_cluster)}")
+
     # ==========================================
     # FORECASTING
     # ==========================================
