@@ -199,29 +199,34 @@ if uploaded_file is not None:
     st.subheader("Rata-rata Total per Cluster")
     st.write(cluster_summary)
 
-    # ==========================================
-# DAFTAR PRODUK PER CLUSTER
+ # ==========================================
+# PILIH CLUSTER
 # ==========================================
 
-st.subheader("Daftar Produk per Cluster")
+st.subheader("Lihat Produk Berdasarkan Cluster")
 
-for i in range(jumlah_cluster):
+pilih_cluster = st.selectbox(
+    "Pilih Cluster",
+    sorted(filtered_data['Cluster'].unique())
+)
 
-    produk_cluster = filtered_data[
-        filtered_data['Cluster'] == i
-    ].index.tolist()
+# ==========================================
+# TAMPILKAN PRODUK DALAM CLUSTER
+# ==========================================
 
-    df_cluster = pd.DataFrame({
-        'Produk': produk_cluster
-    })
+produk_cluster = filtered_data[
+    filtered_data['Cluster'] == pilih_cluster
+].index.tolist()
 
-    st.write(f"Cluster {i}")
-    st.dataframe(df_cluster)
+st.write(f"Daftar Produk di Cluster {pilih_cluster}")
 
-    st.write(f"Jumlah Produk: {len(produk_cluster)}")
+df_produk_cluster = pd.DataFrame({
+    'Produk': produk_cluster
+})
 
-    st.markdown("---")
+st.dataframe(df_produk_cluster)
 
+st.write(f"Jumlah Produk: {len(produk_cluster)}")
     # ==========================================
     # FORECASTING
     # ==========================================
