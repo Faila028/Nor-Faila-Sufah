@@ -260,19 +260,34 @@ if uploaded_file is not None:
     data_produk = data_produk.drop(labels=['Cluster', 'Total'])
 
     # Ubah ke numeric
-    data_produk = pd.to_numeric(data_produk)
+    # Ubah ke numeric
+data_produk = pd.to_numeric(data_produk)
 
-    if (data_produk <= 0).any():
+# ==========================================
+# PENYESUAIAN UNTUK MULTIPLICATIVE
+# ==========================================
+
+# Jika ada nilai <= 0
+if (data_produk <= 0).any():
 
     st.warning(
-        "Data mengandung nilai 0. "
-        "Dilakukan transformasi +1 agar "
-        "bisa menggunakan Holt-Winters Multiplicative."
+        "Data mengandung nilai 0 atau negatif. "
+        "Dilakukan transformasi +1 "
+        "agar metode multiplicative dapat digunakan."
     )
 
-    # Tambahkan konstanta 1
     data_produk = data_produk + 1
 
+# ==========================================
+# CEK JUMLAH DATA
+# ==========================================
+
+if len(data_produk) < 24:
+
+    st.warning(
+        "Data kurang dari 24 periode. "
+        "Forecast mungkin kurang optimal."
+    )
     # ==========================================
     # TAMPILKAN DATA PRODUK
     # ==========================================
