@@ -200,6 +200,29 @@ if uploaded_file is not None:
     st.write(cluster_summary)
 
     # ==========================================
+# DAFTAR PRODUK PER CLUSTER
+# ==========================================
+
+st.subheader("Daftar Produk per Cluster")
+
+for i in range(jumlah_cluster):
+
+    produk_cluster = filtered_data[
+        filtered_data['Cluster'] == i
+    ].index.tolist()
+
+    df_cluster = pd.DataFrame({
+        'Produk': produk_cluster
+    })
+
+    st.write(f"Cluster {i}")
+    st.dataframe(df_cluster)
+
+    st.write(f"Jumlah Produk: {len(produk_cluster)}")
+
+    st.markdown("---")
+
+    # ==========================================
     # FORECASTING
     # ==========================================
 
