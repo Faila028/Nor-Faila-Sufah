@@ -57,22 +57,6 @@ if uploaded_file is not None:
     df['tgl_input'] = pd.to_datetime(df['tgl_input'])
 
     # ==========================================
-    # FILTER PRODUK MINIMAL TERJUAL 6 BULAN
-    # ==========================================
-
-    jumlah_bulan_terjual = (pivot_table > 0).sum(axis=1)
-
-    pivot_table = pivot_table[
-        jumlah_bulan_terjual >= 6
-    ]
-
-    st.subheader("Data Setelah Filter Minimal 6 Bulan Penjualan")
-
-    st.write(
-        f"Jumlah produk setelah filter: {len(pivot_table)}"
-    )
-
-    # ==========================================
     # MEMBUAT FORMAT BULAN
     # ==========================================
 
@@ -105,6 +89,22 @@ if uploaded_file is not None:
 
     st.subheader("Pivot Table Barang Keluar")
     st.dataframe(pivot_table)
+
+    # ==========================================
+    # FILTER PRODUK MINIMAL TERJUAL 6 BULAN
+    # ==========================================
+
+    jumlah_bulan_terjual = (pivot_table > 0).sum(axis=1)
+
+    pivot_table = pivot_table[
+        jumlah_bulan_terjual >= 6
+    ]
+
+    st.subheader("Data Setelah Filter Minimal 6 Bulan Penjualan")
+
+    st.write(
+        f"Jumlah produk setelah filter: {len(pivot_table)}"
+    )
 
     # ==========================================
     # DOWNLOAD PIVOT TABLE
