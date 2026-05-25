@@ -379,3 +379,38 @@ if uploaded_file is not None:
     ax3.grid(True)
 
     st.pyplot(fig3)
+
+    # ==========================================
+    # HITUNG MAPE
+    # ==========================================
+
+    actual = data_produk.values
+    predicted = fitted_values.values
+
+    # Hindari pembagian dengan nol
+    mask = actual != 0
+
+    actual = actual[mask]
+    predicted = predicted[mask]
+
+    mape = mean_absolute_percentage_error(
+        actual,
+        predicted
+    ) * 100
+
+    # Kategori MAPE
+
+    if mape < 10:
+        kategori = "Sangat Baik"
+    elif mape < 20:
+        kategori = "Baik"
+    elif mape < 50:
+        kategori = "Cukup"
+    else:
+        kategori = "Buruk"
+
+    st.subheader("Evaluasi Forecast")
+
+    st.write(f"MAPE: {mape:.2f}%")
+
+    st.write(f"Kategori: {kategori}")
