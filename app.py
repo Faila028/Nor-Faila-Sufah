@@ -415,3 +415,202 @@ if uploaded_file is not None:
     st.write(f"MAPE: {mape:.2f}%")
 
     st.write(f"Kategori: {kategori}")
+
+    # ==========================================
+    # MOVING AVERAGE FORECAST
+    # ==========================================
+
+    st.header("Forecasting Moving Average")
+
+    daftar_produk = filtered_data.index.tolist()
+
+    produk = st.selectbox(
+        "Pilih Produk",
+        daftar_produk
+    )
+
+    # ==========================================
+    # AMBIL DATA PRODUK
+    # ==========================================
+
+    data_produk = filtered_data.loc[produk]
+
+    kolom_hapus = []
+
+    if 'Cluster' in data_produk.index:
+        kolom_hapus.append('Cluster')
+
+    if 'Total' in data_produk.index:
+        kolom_hapus.append('Total')
+
+    if 'Kategori' in data_produk.index:
+        kolom_hapus.append('Kategori')
+
+    data_produk = data_produk.drop(kolom_hapus)
+
+    # ==========================================
+    # UBAH KE NUMERIK
+    # ==========================================
+
+    data_produk = pd.to_numeric(data_produk)
+
+    # ==========================================
+    # INDEX TANGGAL
+    # ==========================================
+
+    data_produk.index = pd.date_range(
+        start='2023-01-01',
+        periods=len(data_produk),
+        freq='ME'
+    )
+
+    # ==========================================
+    # WINDOW MOVING AVERAGE
+    # ==========================================
+
+    window = st.slider(
+        "Pilih Window Moving Average",
+        min_value=2,
+        max_value=6,
+        value=3
+    )
+
+    # ==========================================
+    # FITTED VALUES
+    # ==========================================
+
+    fitted_values = data_produk.rolling(
+        window=window
+    ).mean()
+
+    # ==========================================
+    # HITUNG MAPE
+    # ==========================================
+
+    actual = data_produk[window-1:]
+    predicted = fitted_values[window-1:]
+
+    # Hindari pembagian dengan nol
+
+    mask = actual != 0
+
+    actual = actual[mask]
+    predicted = predicted[mask]
+
+    mape = (
+        abs((actual - predicted) / actual)
+    ).mean() * 100
+
+    # ==========================================
+    # KATEGORI MAPE
+    # ==========================================
+
+    if mape < 10:
+        kategori_mape = "Sangat Baik"
+
+    elif mape < 20:
+        kategori_mape = "Baik"
+
+    elif mape < 50:
+        kategori_mape = "Cukup"
+
+    else:
+        kategori_mape = "Buruk"
+
+    # ==========================================
+    # TAMPILKAN MAPE
+    # ==========================================
+
+    st.subheader("Evaluasi Forecast")
+
+    st.write(f"MAPE: {mape:.2f}%")
+
+    st.write(f"Kategori: {kategori_mape}")
+
+    # ==========================================
+    # JUMLAH FORECAST
+    # ==========================================
+
+    jumlah_forecast = st.slider(
+        "Jumlah Forecast Bulan",
+        min_value=1,
+        max_value=12,
+        value=6
+    )
+
+    # ==========================================
+    # FORECAST MASA DEPAN
+    # ==========================================
+
+    forecast_value = data_produk[-window:].mean()
+
+    forecast = pd.Series(
+        [forecast_value] * jumlah_forecast,
+        index=pd.date_range(
+            start=data_produk.index[-1] + pd.offsets.MonthEnd(1),
+            periods=jumlah_forecast,
+            freq='ME'
+        )
+    )
+
+    # ==========================================
+    # TAMPILKAN FORECAST
+    # ==========================================
+
+    st.subheader("Hasil Forecast")
+
+    st.write(forecast)
+
+    # ==========================================
+    # VISUALISASI
+    # ==========================================
+
+    fig, ax = plt.subplots(figsize=(12,5))
+
+    # Data aktual
+
+    ax.plot(
+        data_produk.index,
+        data_produk.values,
+        marker='o',
+        label='Data Aktual'
+    )
+
+    # Fitted values
+
+    ax.plot(
+        fitted_values.index,
+        fitted_values.values,
+        linestyle='--',
+        marker='o',
+        label='Moving Average'
+    )
+
+    # Forecast
+
+    ax.plot(
+        forecast.index,
+        forecast.values,
+        linestyle='--',
+        marker='o',
+        label='Forecast'
+    )
+
+    ax.set_title(
+        f'Forecast Moving Average Produk {produk}'
+    )
+
+    ax.set_xlabel('Periode')
+
+    ax.set_ylabel('Jumlah Barang Keluar')
+
+    ax.legend()
+
+    ax.grid(True)
+
+    ax.ticklabel_format(
+        style='plain',
+        axis='y'
+    )
+
+    st.pyplot(fig)
