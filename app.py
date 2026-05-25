@@ -312,7 +312,7 @@ if uploaded_file is not None:
         data_produk,
         trend='add',
         seasonal='add',
-        seasonal_periods=12
+        seasonal_periods=None
     )
 
     fit_model = model.fit()
