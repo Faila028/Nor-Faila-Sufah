@@ -199,7 +199,7 @@ if uploaded_file is not None:
     st.subheader("Rata-rata Total per Cluster")
     st.write(cluster_summary)
 
- # ==========================================
+# ==========================================
 # PILIH CLUSTER
 # ==========================================
 
@@ -226,17 +226,15 @@ df_produk_cluster = pd.DataFrame({
 
 st.dataframe(df_produk_cluster)
 
-st.write(f"Jumlah Produk: {len(produk_cluster)}")
+# ==========================================
+# FORECASTING
+# ==========================================
 
-    # ==========================================
-    # FORECASTING
-    # ==========================================
+st.header("Forecasting Holt-Winters")
 
-    st.header("Forecasting Holt-Winters")
+daftar_produk = filtered_data.index.tolist()
 
-    daftar_produk = filtered_data.index.tolist()
-
-    produk = st.selectbox(
+produk = st.selectbox(
         "Pilih Produk",
         daftar_produk
     )
@@ -356,3 +354,8 @@ st.write(f"Jumlah Produk: {len(produk_cluster)}")
 
     st.pyplot(fig3)
 
+
+
+st.write(f"Jumlah Produk: {len(produk_cluster)}")
+
+    
