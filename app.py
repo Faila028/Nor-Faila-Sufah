@@ -242,16 +242,17 @@ if uploaded_file is not None:
     )
 
     # ==========================================
-    # MOVING AVERAGE FORECAST
+    # FORECASTING
     # ==========================================
 
-    st.header("Forecasting Moving Average")
+    st.header("Forecasting Holt-Winters")
 
     daftar_produk = filtered_data.index.tolist()
 
     produk = st.selectbox(
         "Pilih Produk",
         daftar_produk
+        key="holt_winters_produk"
     )
 
     # ==========================================
@@ -268,16 +269,7 @@ if uploaded_file is not None:
     if 'Total' in data_produk.index:
         kolom_hapus.append('Total')
 
-    if 'Kategori' in data_produk.index:
-        kolom_hapus.append('Kategori')
-
     data_produk = data_produk.drop(kolom_hapus)
-
-    # ==========================================
-    # UBAH KE NUMERIK
-    # ==========================================
-
-    data_produk = pd.to_numeric(data_produk)
 
     # ==========================================
     # INDEX TANGGAL
@@ -290,70 +282,50 @@ if uploaded_file is not None:
     )
 
     # ==========================================
-    # WINDOW MOVING AVERAGE
+    # TAMPILKAN DATA AKTUAL
     # ==========================================
 
-    window = st.slider(
-        "Pilih Window Moving Average",
-        min_value=2,
-        max_value=6,
-        value=3
+    fig2, ax2 = plt.subplots(figsize=(12,5))
+
+    ax2.plot(
+        data_produk.index,
+        data_produk.values,
+        marker='o',
+        label='Data Aktual'
     )
 
-    # ==========================================
-    # FITTED VALUES
-    # ==========================================
+    ax2.set_title(f'Data Aktual Produk {produk}')
 
-    fitted_values = data_produk.rolling(
-        window=window
-    ).mean()
+    ax2.set_xlabel('Periode')
+    ax2.set_ylabel('Jumlah Barang Keluar')
 
-    # ==========================================
-    # HITUNG MAPE
-    # ==========================================
+    ax2.legend()
 
-    actual = data_produk[window-1:]
-    predicted = fitted_values[window-1:]
+    ax2.grid(True)
 
-    # Hindari pembagian dengan nol
-
-    mask = actual != 0
-
-    actual = actual[mask]
-    predicted = predicted[mask]
-
-    mape = (
-        abs((actual - predicted) / actual)
-    ).mean() * 100
+    st.pyplot(fig2)
 
     # ==========================================
-    # KATEGORI MAPE
+    # MODEL HOLT-WINTERS
     # ==========================================
 
-    if mape < 10:
-        kategori_mape = "Sangat Baik"
+    model = ExponentialSmoothing(
+        data_produk,
+        trend='add',
+        seasonal='add',
+        seasonal_periods=None
+    )
 
-    elif mape < 20:
-        kategori_mape = "Baik"
-
-    elif mape < 50:
-        kategori_mape = "Cukup"
-
-    else:
-        kategori_mape = "Buruk"
+    fit_model = model.fit()
 
     # ==========================================
-    # TAMPILKAN MAPE
+    # HASIL FITTING DATA TRAINING
     # ==========================================
 
-    st.subheader("Evaluasi Forecast")
-
-    st.write(f"MAPE: {mape:.2f}%")
-
-    st.write(f"Kategori: {kategori_mape}")
+    fitted_values = fit_model.fittedvalues
 
     # ==========================================
-    # JUMLAH FORECAST
+    # FORECAST
     # ==========================================
 
     jumlah_forecast = st.slider(
@@ -363,79 +335,51 @@ if uploaded_file is not None:
         value=6
     )
 
-    # ==========================================
-    # FORECAST MASA DEPAN
-    # ==========================================
-
-    forecast_value = data_produk[-window:].mean()
-
-    forecast = pd.Series(
-        [forecast_value] * jumlah_forecast,
-        index=pd.date_range(
-            start=data_produk.index[-1] + pd.offsets.MonthEnd(1),
-            periods=jumlah_forecast,
-            freq='ME'
-        )
+    forecast = fit_model.forecast(
+        jumlah_forecast
     )
 
-    # ==========================================
-    # TAMPILKAN FORECAST
-    # ==========================================
+    # Mengubah hasil negatif menjadi 0
+
+    forecast = forecast.clip(lower=0)
 
     st.subheader("Hasil Forecast")
 
     st.write(forecast)
 
     # ==========================================
-    # VISUALISASI
+    # VISUALISASI FORECAST
     # ==========================================
 
-    fig, ax = plt.subplots(figsize=(12,5))
+    fig3, ax3 = plt.subplots(figsize=(12,5))
 
-    # Data aktual
-
-    ax.plot(
+    ax3.plot(
         data_produk.index,
         data_produk.values,
         marker='o',
         label='Data Aktual'
     )
 
-    # Fitted values
-
-    ax.plot(
-        fitted_values.index,
-        fitted_values.values,
-        linestyle='--',
-        marker='o',
-        label='Moving Average'
-    )
-
-    # Forecast
-
-    ax.plot(
+    ax3.plot(
         forecast.index,
         forecast.values,
-        linestyle='--',
         marker='o',
-        label='Forecast'
+        linestyle='--',
+        label='Forecast Holt-Winters'
     )
 
-    ax.set_title(
-        f'Forecast Moving Average Produk {produk}'
+    ax3.set_title(
+        f'Forecast Produk {produk}'
     )
 
-    ax.set_xlabel('Periode')
+    ax3.set_xlabel('Periode')
 
-    ax.set_ylabel('Jumlah Barang Keluar')
+    ax3.set_ylabel('Jumlah Barang Keluar')
 
-    ax.legend()
+    ax3.legend()
 
-    ax.grid(True)
+    ax3.grid(True)
 
-    ax.ticklabel_format(
-        style='plain',
-        axis='y'
-    )
+    st.pyplot(fig3)
 
     st.pyplot(fig)
