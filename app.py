@@ -252,7 +252,6 @@ if uploaded_file is not None:
     produk = st.selectbox(
         "Pilih Produk",
         daftar_produk
-        key="moving_average_produk"
     )
 
     # ==========================================
