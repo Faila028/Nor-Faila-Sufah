@@ -252,7 +252,6 @@ if uploaded_file is not None:
     produk = st.selectbox(
         "Pilih Produk",
         daftar_produk
-        key="holt_winters_produk"
     )
 
     # ==========================================
@@ -313,7 +312,7 @@ if uploaded_file is not None:
         data_produk,
         trend='add',
         seasonal='add',
-        seasonal_periods=None
+        seasonal_periods=12
     )
 
     fit_model = model.fit()
