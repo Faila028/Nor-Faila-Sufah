@@ -367,7 +367,6 @@ if uploaded_file is not None:
 
     fig3, ax3 = plt.subplots(figsize=(12,5))
 
-    # Data aktual
     ax3.plot(
         data_produk.index,
         data_produk.values,
@@ -375,26 +374,20 @@ if uploaded_file is not None:
         label='Data Aktual'
     )
 
-    # Hasil fitting model
-    ax3.plot(
-        data_produk.index,
-        fitted_values,
-        linestyle='--',
-        label='Fitted Holt-Winters'
-    )
-
-    # Forecast masa depan
     ax3.plot(
         forecast.index,
         forecast.values,
         marker='o',
         linestyle='--',
-        label='Forecast'
+        label='Forecast Holt-Winters'
     )
 
-    ax3.set_title(f'Forecast Produk {produk}')
+    ax3.set_title(
+        f'Forecast Produk {produk}'
+    )
 
     ax3.set_xlabel('Periode')
+
     ax3.set_ylabel('Jumlah Barang Keluar')
 
     ax3.legend()
