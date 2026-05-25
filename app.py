@@ -311,7 +311,8 @@ if uploaded_file is not None:
     model = ExponentialSmoothing(
         data_produk,
         trend='add',
-        seasonal=None
+        seasonal='add',
+        seasonal_periods=12
     )
 
     fit_model = model.fit()
