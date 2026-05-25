@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
 from statsmodels.tsa.holtwinters import ExponentialSmoothing
-from sklearn.metrics import mean_absolute_percentage_error
 
 # ==========================================
 # CONFIG HALAMAN
@@ -380,5 +379,3 @@ if uploaded_file is not None:
     ax3.grid(True)
 
     st.pyplot(fig3)
-
-    st.pyplot(fig)
