@@ -1,6 +1,5 @@
 # app.py
 
-
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -101,11 +100,11 @@ if uploaded_file is not None:
     # DOWNLOAD PIVOT TABLE
     # ==========================================
 
-    excel_data = pivot_table.to_csv().encode('utf-8')
+    csv_data = pivot_table.to_csv().encode('utf-8')
 
     st.download_button(
         label="Download Pivot Table",
-        data=excel_data,
+        data=csv_data,
         file_name='data_barang_keluar.csv',
         mime='text/csv'
     )
@@ -137,19 +136,28 @@ if uploaded_file is not None:
     # ==========================================
 
     inertia = []
+
     K = range(1, 10)
 
     for k in K:
-        kmeans = KMeans(n_clusters=k, random_state=42)
+
+        kmeans = KMeans(
+            n_clusters=k,
+            random_state=42
+        )
+
         kmeans.fit(scaled_data)
+
         inertia.append(kmeans.inertia_)
 
     fig1, ax1 = plt.subplots(figsize=(8,5))
 
     ax1.plot(K, inertia, marker='o')
+
     ax1.set_xlabel('Jumlah Cluster (k)')
     ax1.set_ylabel('Inertia')
     ax1.set_title('Metode Elbow')
+
     ax1.grid(True)
 
     st.pyplot(fig1)
@@ -182,179 +190,198 @@ if uploaded_file is not None:
     st.dataframe(filtered_data.head())
 
     # ==========================================
-    # JUMLAH PRODUK TIAP CLUSTER
+    # JUMLAH PRODUK PER CLUSTER
     # ==========================================
 
     st.subheader("Jumlah Produk per Cluster")
-    st.write(filtered_data['Cluster'].value_counts())
+
+    st.write(
+        filtered_data['Cluster'].value_counts()
+    )
 
     # ==========================================
     # RATA-RATA TOTAL PER CLUSTER
     # ==========================================
 
-    filtered_data['Total'] = filtered_data.drop(columns=['Cluster']).sum(axis=1)
+    filtered_data['Total'] = filtered_data.drop(
+        columns=['Cluster']
+    ).sum(axis=1)
 
-    cluster_summary = filtered_data.groupby('Cluster')['Total'].mean()
+    cluster_summary = filtered_data.groupby(
+        'Cluster'
+    )['Total'].mean()
 
     st.subheader("Rata-rata Total per Cluster")
+
     st.write(cluster_summary)
 
-# ==========================================
-# PILIH CLUSTER
-# ==========================================
+    # ==========================================
+    # PILIH CLUSTER
+    # ==========================================
 
-st.subheader("Lihat Produk Berdasarkan Cluster")
+    st.subheader("Lihat Produk Berdasarkan Cluster")
 
-pilih_cluster = st.selectbox(
-    "Pilih Cluster",
-    sorted(filtered_data['Cluster'].unique())
-)
+    pilih_cluster = st.selectbox(
+        "Pilih Cluster",
+        sorted(filtered_data['Cluster'].unique())
+    )
 
-# ==========================================
-# TAMPILKAN PRODUK DALAM CLUSTER
-# ==========================================
+    # ==========================================
+    # TAMPILKAN PRODUK DALAM CLUSTER
+    # ==========================================
 
-produk_cluster = filtered_data[
-    filtered_data['Cluster'] == pilih_cluster
-].index.tolist()
+    produk_cluster = filtered_data[
+        filtered_data['Cluster'] == pilih_cluster
+    ].index.tolist()
 
-st.write(f"Daftar Produk di Cluster {pilih_cluster}")
+    st.write(f"Daftar Produk di Cluster {pilih_cluster}")
 
-df_produk_cluster = pd.DataFrame({
-    'Produk': produk_cluster
-})
+    df_produk_cluster = pd.DataFrame({
+        'Produk': produk_cluster
+    })
 
-st.dataframe(df_produk_cluster)
+    st.dataframe(df_produk_cluster)
 
-# ==========================================
-# FORECASTING
-# ==========================================
+    st.write(
+        f"Jumlah Produk: {len(produk_cluster)}"
+    )
 
-st.header("Forecasting Holt-Winters")
+    # ==========================================
+    # FORECASTING
+    # ==========================================
 
-daftar_produk = filtered_data.index.tolist()
+    st.header("Forecasting Holt-Winters")
 
-produk = st.selectbox(
-    "Pilih Produk",
-    daftar_produk
-)
+    daftar_produk = filtered_data.index.tolist()
 
-# ==========================================
-# AMBIL DATA PRODUK
-# ==========================================
+    produk = st.selectbox(
+        "Pilih Produk",
+        daftar_produk
+    )
 
-data_produk = filtered_data.loc[produk]
+    # ==========================================
+    # AMBIL DATA PRODUK
+    # ==========================================
 
-kolom_hapus = []
+    data_produk = filtered_data.loc[produk]
 
-if 'Cluster' in data_produk.index:
-    kolom_hapus.append('Cluster')
+    kolom_hapus = []
 
-if 'Total' in data_produk.index:
-    kolom_hapus.append('Total')
+    if 'Cluster' in data_produk.index:
+        kolom_hapus.append('Cluster')
 
-data_produk = data_produk.drop(kolom_hapus)
+    if 'Total' in data_produk.index:
+        kolom_hapus.append('Total')
 
-# ==========================================
-# GANTI 0 MENJADI 1
-# ==========================================
+    data_produk = data_produk.drop(kolom_hapus)
 
-data_produk = data_produk.replace(0, 1)
+    # ==========================================
+    # GANTI 0 MENJADI 1
+    # ==========================================
 
-# ==========================================
-# INDEX TANGGAL
-# ==========================================
+    data_produk = data_produk.replace(0, 1)
 
-data_produk.index = pd.date_range(
-    start='2023-01-01',
-    periods=len(data_produk),
-    freq='ME'
-)
+    # ==========================================
+    # INDEX TANGGAL
+    # ==========================================
 
-# ==========================================
-# TAMPILKAN DATA AKTUAL
-# ==========================================
+    data_produk.index = pd.date_range(
+        start='2023-01-01',
+        periods=len(data_produk),
+        freq='ME'
+    )
 
-fig2, ax2 = plt.subplots(figsize=(12,5))
+    # ==========================================
+    # TAMPILKAN DATA AKTUAL
+    # ==========================================
 
-ax2.plot(
-    data_produk.index,
-    data_produk.values,
-    marker='o',
-    label='Data Aktual'
-)
+    fig2, ax2 = plt.subplots(figsize=(12,5))
 
-ax2.set_title(f'Data Aktual Produk {produk}')
-ax2.set_xlabel('Periode')
-ax2.set_ylabel('Jumlah Barang Keluar')
-ax2.legend()
-ax2.grid(True)
+    ax2.plot(
+        data_produk.index,
+        data_produk.values,
+        marker='o',
+        label='Data Aktual'
+    )
 
-st.pyplot(fig2)
+    ax2.set_title(f'Data Aktual Produk {produk}')
 
-# ==========================================
-# MODEL HOLT WINTERS
-# ==========================================
+    ax2.set_xlabel('Periode')
+    ax2.set_ylabel('Jumlah Barang Keluar')
 
-model = ExponentialSmoothing(
-    data_produk,
-    trend='add',
-    seasonal='mul',
-    seasonal_periods=12
-)
+    ax2.legend()
 
-fit_model = model.fit()
+    ax2.grid(True)
 
-# ==========================================
-# FORECAST
-# ==========================================
+    st.pyplot(fig2)
 
-jumlah_forecast = st.slider(
-    "Jumlah Forecast Bulan",
-    min_value=1,
-    max_value=12,
-    value=6
-)
+    # ==========================================
+    # MODEL HOLT-WINTERS
+    # ==========================================
 
-forecast = fit_model.forecast(jumlah_forecast)
+    model = ExponentialSmoothing(
+        data_produk,
+        trend='add',
+        seasonal='mul',
+        seasonal_periods=12
+    )
 
-# Mengubah hasil negatif menjadi 0
-forecast = forecast.clip(lower=0)
+    fit_model = model.fit()
 
+    # ==========================================
+    # FORECAST
+    # ==========================================
 
-st.subheader("Hasil Forecast")
-st.write(forecast)
+    jumlah_forecast = st.slider(
+        "Jumlah Forecast Bulan",
+        min_value=1,
+        max_value=12,
+        value=6
+    )
 
-# ==========================================
-# VISUALISASI FORECAST
-# ==========================================
+    forecast = fit_model.forecast(
+        jumlah_forecast
+    )
 
-fig3, ax3 = plt.subplots(figsize=(12,5))
+    # Mengubah hasil negatif menjadi 0
 
-ax3.plot(
-    data_produk.index,
-    data_produk.values,
-    marker='o',
-    label='Data Aktual'
-)
+    forecast = forecast.clip(lower=0)
 
-ax3.plot(
-    forecast.index,
-    forecast.values,
-    marker='o',
-    linestyle='--',
-    label='Forecast Holt-Winters'
-)
+    st.subheader("Hasil Forecast")
 
-ax3.set_title(f'Forecast Produk {produk}')
-ax3.set_xlabel('Periode')
-ax3.set_ylabel('Jumlah Barang Keluar')
-ax3.legend()
-ax3.grid(True)
+    st.write(forecast)
 
-st.pyplot(fig3)
+    # ==========================================
+    # VISUALISASI FORECAST
+    # ==========================================
 
+    fig3, ax3 = plt.subplots(figsize=(12,5))
 
+    ax3.plot(
+        data_produk.index,
+        data_produk.values,
+        marker='o',
+        label='Data Aktual'
+    )
 
-st.write(f"Jumlah Produk: {len(produk_cluster)}")
+    ax3.plot(
+        forecast.index,
+        forecast.values,
+        marker='o',
+        linestyle='--',
+        label='Forecast Holt-Winters'
+    )
 
+    ax3.set_title(
+        f'Forecast Produk {produk}'
+    )
+
+    ax3.set_xlabel('Periode')
+
+    ax3.set_ylabel('Jumlah Barang Keluar')
+
+    ax3.legend()
+
+    ax3.grid(True)
+
+    st.pyplot(fig3)
