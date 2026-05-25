@@ -235,127 +235,126 @@ st.header("Forecasting Holt-Winters")
 daftar_produk = filtered_data.index.tolist()
 
 produk = st.selectbox(
-        "Pilih Produk",
-        daftar_produk
-    )
+    "Pilih Produk",
+    daftar_produk
+)
 
-    # ==========================================
-    # AMBIL DATA PRODUK
-    # ==========================================
+# ==========================================
+# AMBIL DATA PRODUK
+# ==========================================
 
-    data_produk = filtered_data.loc[produk]
+data_produk = filtered_data.loc[produk]
 
-    kolom_hapus = []
+kolom_hapus = []
 
-    if 'Cluster' in data_produk.index:
-        kolom_hapus.append('Cluster')
+if 'Cluster' in data_produk.index:
+    kolom_hapus.append('Cluster')
 
-    if 'Total' in data_produk.index:
-        kolom_hapus.append('Total')
+if 'Total' in data_produk.index:
+    kolom_hapus.append('Total')
 
-    data_produk = data_produk.drop(kolom_hapus)
+data_produk = data_produk.drop(kolom_hapus)
 
-    # ==========================================
-    # GANTI 0 MENJADI 1
-    # ==========================================
+# ==========================================
+# GANTI 0 MENJADI 1
+# ==========================================
 
-    data_produk = data_produk.replace(0, 1)
+data_produk = data_produk.replace(0, 1)
 
-    # ==========================================
-    # INDEX TANGGAL
-    # ==========================================
+# ==========================================
+# INDEX TANGGAL
+# ==========================================
 
-    data_produk.index = pd.date_range(
-        start='2023-01-01',
-        periods=len(data_produk),
-        freq='ME'
-    )
+data_produk.index = pd.date_range(
+    start='2023-01-01',
+    periods=len(data_produk),
+    freq='ME'
+)
 
-    # ==========================================
-    # TAMPILKAN DATA AKTUAL
-    # ==========================================
+# ==========================================
+# TAMPILKAN DATA AKTUAL
+# ==========================================
 
-    fig2, ax2 = plt.subplots(figsize=(12,5))
+fig2, ax2 = plt.subplots(figsize=(12,5))
 
-    ax2.plot(
-        data_produk.index,
-        data_produk.values,
-        marker='o',
-        label='Data Aktual'
-    )
+ax2.plot(
+    data_produk.index,
+    data_produk.values,
+    marker='o',
+    label='Data Aktual'
+)
 
-    ax2.set_title(f'Data Aktual Produk {produk}')
-    ax2.set_xlabel('Periode')
-    ax2.set_ylabel('Jumlah Barang Keluar')
-    ax2.legend()
-    ax2.grid(True)
+ax2.set_title(f'Data Aktual Produk {produk}')
+ax2.set_xlabel('Periode')
+ax2.set_ylabel('Jumlah Barang Keluar')
+ax2.legend()
+ax2.grid(True)
 
-    st.pyplot(fig2)
+st.pyplot(fig2)
 
-    # ==========================================
-    # MODEL HOLT WINTERS
-    # ==========================================
+# ==========================================
+# MODEL HOLT WINTERS
+# ==========================================
 
-    model = ExponentialSmoothing(
-        data_produk,
-        trend='add',
-        seasonal='mul',
-        seasonal_periods=12
-    )
+model = ExponentialSmoothing(
+    data_produk,
+    trend='add',
+    seasonal='mul',
+    seasonal_periods=12
+)
 
-    fit_model = model.fit()
+fit_model = model.fit()
 
-    # ==========================================
-    # FORECAST
-    # ==========================================
+# ==========================================
+# FORECAST
+# ==========================================
 
-    jumlah_forecast = st.slider(
-        "Jumlah Forecast Bulan",
-        min_value=1,
-        max_value=12,
-        value=6
-    )
+jumlah_forecast = st.slider(
+    "Jumlah Forecast Bulan",
+    min_value=1,
+    max_value=12,
+    value=6
+)
 
-    forecast = fit_model.forecast(jumlah_forecast)
+forecast = fit_model.forecast(jumlah_forecast)
 
-    # Mengubah hasil negatif menjadi 0
-    forecast = forecast.clip(lower=0)
+# Mengubah hasil negatif menjadi 0
+forecast = forecast.clip(lower=0)
 
 
-    st.subheader("Hasil Forecast")
-    st.write(forecast)
+st.subheader("Hasil Forecast")
+st.write(forecast)
 
-    # ==========================================
-    # VISUALISASI FORECAST
-    # ==========================================
+# ==========================================
+# VISUALISASI FORECAST
+# ==========================================
 
-    fig3, ax3 = plt.subplots(figsize=(12,5))
+fig3, ax3 = plt.subplots(figsize=(12,5))
 
-    ax3.plot(
-        data_produk.index,
-        data_produk.values,
-        marker='o',
-        label='Data Aktual'
-    )
+ax3.plot(
+    data_produk.index,
+    data_produk.values,
+    marker='o',
+    label='Data Aktual'
+)
 
-    ax3.plot(
-        forecast.index,
-        forecast.values,
-        marker='o',
-        linestyle='--',
-        label='Forecast Holt-Winters'
-    )
+ax3.plot(
+    forecast.index,
+    forecast.values,
+    marker='o',
+    linestyle='--',
+    label='Forecast Holt-Winters'
+)
 
-    ax3.set_title(f'Forecast Produk {produk}')
-    ax3.set_xlabel('Periode')
-    ax3.set_ylabel('Jumlah Barang Keluar')
-    ax3.legend()
-    ax3.grid(True)
+ax3.set_title(f'Forecast Produk {produk}')
+ax3.set_xlabel('Periode')
+ax3.set_ylabel('Jumlah Barang Keluar')
+ax3.legend()
+ax3.grid(True)
 
-    st.pyplot(fig3)
+st.pyplot(fig3)
 
 
 
 st.write(f"Jumlah Produk: {len(produk_cluster)}")
 
-    
