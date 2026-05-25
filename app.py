@@ -286,12 +286,6 @@ if uploaded_file is not None:
     data_produk = data_produk.drop(kolom_hapus)
 
     # ==========================================
-    # GANTI 0 MENJADI 1
-    # ==========================================
-
-    data_produk = data_produk.replace(0, 1)
-
-    # ==========================================
     # INDEX TANGGAL
     # ==========================================
 
@@ -332,7 +326,7 @@ if uploaded_file is not None:
     model = ExponentialSmoothing(
         data_produk,
         trend='add',
-        seasonal='mul',
+        seasonal='add',
         seasonal_periods=12
     )
 
