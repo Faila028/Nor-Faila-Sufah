@@ -1,4 +1,4 @@
-tolong ubah kode di bawah ini menjadi 4 metode forecast saja, ets,hw add, hw multi, dan arima# app.py 
+# app.py 
 
 import streamlit as st
 import pandas as pd
