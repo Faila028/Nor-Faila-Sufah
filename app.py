@@ -13,12 +13,8 @@ from sklearn.metrics import (
     mean_squared_error
 )
 
-from statsmodels.tsa.holtwinters import (
-    ExponentialSmoothing
-)
-
+from statsmodels.tsa.holtwinters import ExponentialSmoothing
 from statsmodels.tsa.arima.model import ARIMA
-
 from statsmodels.tsa.exponential_smoothing.ets import ETSModel
 
 # ==========================================
@@ -31,12 +27,53 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("📦 Clustering dan Forecasting Permintaan Barang")
+# ==========================================
+# CUSTOM CSS
+# ==========================================
 
-uploaded_file = st.file_uploader(
-    "Upload File Excel",
-    type=["xlsx"]
-)
+st.markdown("""
+<style>
+.main { background-color: #f5f7fa; }
+
+h1 {
+    color: #1f4e79;
+    text-align: center;
+    font-weight: bold;
+}
+
+h2, h3 {
+    color: #1f4e79;
+}
+
+.stButton>button {
+    background-color: #1f77b4;
+    color: white;
+    border-radius: 10px;
+    padding: 10px 20px;
+    font-weight: bold;
+}
+
+.stDownloadButton>button {
+    background-color: #28a745;
+    color: white;
+    border-radius: 10px;
+    padding: 10px 20px;
+    font-weight: bold;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# ==========================================
+# TITLE
+# ==========================================
+
+st.title("📦 Clustering & Forecasting Permintaan Barang")
+
+# ==========================================
+# UPLOAD FILE
+# ==========================================
+
+uploaded_file = st.file_uploader("Upload Excel", type=["xlsx"])
 
 if uploaded_file is not None:
 
@@ -57,23 +94,21 @@ if uploaded_file is not None:
     )
 
     urutan_bulan = [
-        'Jan-23','Feb-23','Mar-23','Apr-23',
-        'May-23','Jun-23','Jul-23','Aug-23',
-        'Sep-23','Oct-23','Nov-23','Dec-23',
-        'Jan-24','Feb-24','Mar-24','Apr-24',
-        'May-24','Jun-24','Jul-24','Aug-24',
-        'Sep-24','Oct-24','Nov-24','Dec-24'
+        'Jan-23','Feb-23','Mar-23','Apr-23','May-23','Jun-23',
+        'Jul-23','Aug-23','Sep-23','Oct-23','Nov-23','Dec-23',
+        'Jan-24','Feb-24','Mar-24','Apr-24','May-24','Jun-24',
+        'Jul-24','Aug-24','Sep-24','Oct-24','Nov-24','Dec-24'
     ]
 
     pivot_table = pivot_table.reindex(columns=urutan_bulan)
 
-    st.subheader("Pivot Table")
     st.dataframe(pivot_table)
 
-    # ================= CLUSTERING =================
+    # ==========================================
+    # CLUSTERING
+    # ==========================================
 
     pivot_table['Total'] = pivot_table.sum(axis=1)
-
     filtered_data = pivot_table[pivot_table['Total'] > 1].drop(columns=['Total'])
 
     scaler = StandardScaler()
@@ -85,7 +120,9 @@ if uploaded_file is not None:
     st.subheader("Hasil Clustering")
     st.dataframe(filtered_data.head())
 
-    # ================= FORECASTING =================
+    # ==========================================
+    # PILIH PRODUK
+    # ==========================================
 
     produk = st.selectbox("Pilih Produk", filtered_data.index.tolist())
 
@@ -98,28 +135,24 @@ if uploaded_file is not None:
         freq='ME'
     )
 
+    st.line_chart(data_produk)
+
     metode = st.selectbox(
-        "Pilih Metode Forecasting",
+        "Pilih Metode",
         [
             "Holt-Winters Additive",
             "Holt-Winters Multiplicative",
             "ETS",
             "ARIMA",
-            "Perbandingan Semua Metode"
+            "Perbandingan Semua"
         ]
     )
 
-    jumlah_forecast = st.slider("Jumlah Forecast", 1, 12, 6)
+    steps = st.slider("Forecast Bulan", 1, 12, 6)
 
-    # ================= DATA AKTUAL =================
-
-    fig, ax = plt.subplots(figsize=(12,5))
-    ax.plot(data_produk.index, data_produk.values, marker='o', label='Aktual')
-    ax.legend()
-    ax.grid()
-    st.pyplot(fig)
-
-    # ================= HOLT WINTERS ADD =================
+    # ==========================================
+    # 1. HOLT-WINTERS ADDITIVE
+    # ==========================================
 
     if metode == "Holt-Winters Additive":
 
@@ -131,105 +164,66 @@ if uploaded_file is not None:
         )
 
         fit = model.fit()
-        forecast = fit.forecast(jumlah_forecast).clip(lower=0)
+        forecast = fit.forecast(steps)
 
-        mae = mean_absolute_error(data_produk, fit.fittedvalues)
-        rmse = np.sqrt(mean_squared_error(data_produk, fit.fittedvalues))
+        st.line_chart(pd.concat([data_produk, forecast]))
 
-        st.metric("MAE", f"{mae:.2f}")
-        st.metric("RMSE", f"{rmse:.2f}")
-
-        fig, ax = plt.subplots(figsize=(12,5))
-        ax.plot(data_produk.index, data_produk.values, label='Aktual')
-        ax.plot(forecast.index, forecast.values, '--', label='Forecast')
-        ax.legend()
-        ax.grid()
-        st.pyplot(fig)
-
-    # ================= HOLT WINTERS MULTI =================
+    # ==========================================
+    # 2. HOLT-WINTERS MULTIPLICATIVE
+    # ==========================================
 
     elif metode == "Holt-Winters Multiplicative":
 
-        data_nonzero = data_produk.copy()
-        data_nonzero[data_nonzero <= 0] = 1
+        safe = data_produk.copy()
+        safe[safe <= 0] = 1
 
         model = ExponentialSmoothing(
-            data_nonzero,
+            safe,
             trend='add',
             seasonal='mul',
             seasonal_periods=12
         )
 
         fit = model.fit()
-        forecast = fit.forecast(jumlah_forecast)
+        forecast = fit.forecast(steps)
 
-        mae = mean_absolute_error(data_nonzero, fit.fittedvalues)
-        rmse = np.sqrt(mean_squared_error(data_nonzero, fit.fittedvalues))
+        st.line_chart(pd.concat([data_produk, forecast]))
 
-        st.metric("MAE", f"{mae:.2f}")
-        st.metric("RMSE", f"{rmse:.2f}")
-
-        fig, ax = plt.subplots(figsize=(12,5))
-        ax.plot(data_produk.index, data_produk.values, label='Aktual')
-        ax.plot(forecast.index, forecast.values, '--', label='Forecast')
-        ax.legend()
-        ax.grid()
-        st.pyplot(fig)
-
-    # ================= ETS =================
+    # ==========================================
+    # 3. ETS
+    # ==========================================
 
     elif metode == "ETS":
 
         model = ETSModel(
             data_produk,
-            error="add",
-            trend="add",
-            seasonal="add",
+            error='add',
+            trend='add',
+            seasonal='add',
             seasonal_periods=12
         )
 
         fit = model.fit()
-        forecast = fit.forecast(jumlah_forecast)
+        forecast = fit.forecast(steps)
 
-        mae = mean_absolute_error(data_produk, fit.fittedvalues)
-        rmse = np.sqrt(mean_squared_error(data_produk, fit.fittedvalues))
+        st.line_chart(pd.concat([data_produk, forecast]))
 
-        st.metric("MAE", f"{mae:.2f}")
-        st.metric("RMSE", f"{rmse:.2f}")
-
-        fig, ax = plt.subplots(figsize=(12,5))
-        ax.plot(data_produk.index, data_produk.values, label='Aktual')
-        ax.plot(forecast.index, forecast.values, '--', label='Forecast ETS')
-        ax.legend()
-        ax.grid()
-        st.pyplot(fig)
-
-    # ================= ARIMA =================
+    # ==========================================
+    # 4. ARIMA
+    # ==========================================
 
     elif metode == "ARIMA":
 
         model = ARIMA(data_produk, order=(1,1,1))
         fit = model.fit()
 
-        forecast = fit.forecast(steps=jumlah_forecast)
+        forecast = fit.forecast(steps=steps)
 
-        fitted = fit.predict(start=1, end=len(data_produk)-1)
-        actual = data_produk[1:]
+        st.line_chart(pd.concat([data_produk, forecast]))
 
-        mae = mean_absolute_error(actual, fitted)
-        rmse = np.sqrt(mean_squared_error(actual, fitted))
-
-        st.metric("MAE", f"{mae:.2f}")
-        st.metric("RMSE", f"{rmse:.2f}")
-
-        fig, ax = plt.subplots(figsize=(12,5))
-        ax.plot(data_produk.index, data_produk.values, label='Aktual')
-        ax.plot(forecast.index, forecast.values, '--', label='Forecast ARIMA')
-        ax.legend()
-        ax.grid()
-        st.pyplot(fig)
-
-    # ================= PERBANDINGAN =================
+    # ==========================================
+    # PERBANDINGAN
+    # ==========================================
 
     else:
 
@@ -239,53 +233,61 @@ if uploaded_file is not None:
             trend='add',
             seasonal='add',
             seasonal_periods=12
-        )
-        fit1 = model1.fit()
+        ).fit()
 
-        # HW MULTI
-        data_nonzero = data_produk.copy()
-        data_nonzero[data_nonzero <= 0] = 1
+        # HW MUL
+        safe = data_produk.copy()
+        safe[safe <= 0] = 1
 
         model2 = ExponentialSmoothing(
-            data_nonzero,
+            safe,
             trend='add',
             seasonal='mul',
             seasonal_periods=12
-        )
-        fit2 = model2.fit()
+        ).fit()
 
         # ETS
         model3 = ETSModel(
             data_produk,
-            error="add",
-            trend="add",
-            seasonal="add",
+            error='add',
+            trend='add',
+            seasonal='add',
             seasonal_periods=12
-        )
-        fit3 = model3.fit()
+        ).fit()
 
         # ARIMA
-        model4 = ARIMA(data_produk, order=(1,1,1))
-        fit4 = model4.fit()
+        model4 = ARIMA(data_produk, order=(1,1,1)).fit()
 
-        # MAE
-        df_compare = pd.DataFrame({
-            "Metode": ["HW Add", "HW Multi", "ETS", "ARIMA"],
+        # FORECAST
+        f1 = model1.forecast(steps)
+        f2 = model2.forecast(steps)
+        f3 = model3.forecast(steps)
+        f4 = model4.forecast(steps)
+
+        fig, ax = plt.subplots(figsize=(12,6))
+
+        ax.plot(data_produk, label="Aktual")
+        ax.plot(f1, label="HW Add")
+        ax.plot(f2, label="HW Mul")
+        ax.plot(f3, label="ETS")
+        ax.plot(f4, label="ARIMA")
+
+        ax.legend()
+        ax.grid(True)
+
+        st.pyplot(fig)
+
+        # MAE (training)
+        st.write("Perbandingan sederhana MAE")
+
+        res = pd.DataFrame({
+            "Metode": ["HW Add", "HW Mul", "ETS", "ARIMA"],
             "MAE": [
-                mean_absolute_error(data_produk, fit1.fittedvalues),
-                mean_absolute_error(data_nonzero, fit2.fittedvalues),
-                mean_absolute_error(data_produk, fit3.fittedvalues),
-                mean_absolute_error(data[1:], fit4.predict(start=1, end=len(data_produk)-1))
+                mean_absolute_error(data_produk, model1.fittedvalues),
+                mean_absolute_error(data_produk, model2.fittedvalues),
+                mean_absolute_error(data_produk, model3.fittedvalues),
+                mean_absolute_error(data_produk[1:], model4.predict(start=1, end=len(data_produk)-1))
             ]
         })
 
-        st.dataframe(df_compare)
-
-        fig, ax = plt.subplots(figsize=(10,5))
-        ax.bar(df_compare["Metode"], df_compare["MAE"])
-        ax.grid()
-        st.pyplot(fig)
-
-        best = df_compare.loc[df_compare["MAE"].idxmin()]
-
-        st.success(f"Metode terbaik: {best['Metode']} (MAE {best['MAE']:.2f})")
+        st.dataframe(res.sort_values("MAE"))
