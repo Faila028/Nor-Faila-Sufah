@@ -10,16 +10,17 @@ from sklearn.cluster import KMeans
 
 from sklearn.metrics import (
     mean_absolute_error,
-    mean_squared_error
+    mean_squared_error,
+    mean_absolute_percentage_error
 )
 
 from statsmodels.tsa.holtwinters import (
     ExponentialSmoothing
 )
 
-from statsmodels.tsa.arima.model import ARIMA
-
 from statsmodels.tsa.exponential_smoothing.ets import ETSModel
+
+from statsmodels.tsa.arima.model import ARIMA
 
 # ==========================================
 # CONFIG HALAMAN
@@ -90,7 +91,7 @@ st.markdown("""
 Aplikasi ini digunakan untuk:
 - Clustering produk menggunakan K-Means
 - Forecasting permintaan barang
-- Perbandingan beberapa metode forecasting
+- Perbandingan metode forecasting
 """)
 
 # ==========================================
@@ -262,7 +263,8 @@ if uploaded_file is not None:
     ax1.plot(
         K,
         inertia,
-        marker='o'
+        marker='o',
+        color='blue'
     )
 
     ax1.set_title(
@@ -320,22 +322,12 @@ if uploaded_file is not None:
     )
 
     # ==========================================
-    # JUMLAH PRODUK
+    # GRAFIK CLUSTER
     # ==========================================
-
-    st.subheader(
-        "📊 Jumlah Produk per Cluster"
-    )
 
     cluster_count = filtered_data[
         'Cluster'
     ].value_counts()
-
-    st.write(cluster_count)
-
-    # ==========================================
-    # GRAFIK CLUSTER
-    # ==========================================
 
     fig_cluster, ax_cluster = plt.subplots(
         figsize=(7,5)
@@ -343,7 +335,8 @@ if uploaded_file is not None:
 
     ax_cluster.bar(
         cluster_count.index.astype(str),
-        cluster_count.values
+        cluster_count.values,
+        color='skyblue'
     )
 
     ax_cluster.set_title(
@@ -359,32 +352,7 @@ if uploaded_file is not None:
     st.pyplot(fig_cluster)
 
     # ==========================================
-    # PILIH CLUSTER
-    # ==========================================
-
-    pilih_cluster = st.selectbox(
-        "Pilih Cluster",
-        sorted(
-            filtered_data['Cluster'].unique()
-        )
-    )
-
-    produk_cluster = filtered_data[
-        filtered_data['Cluster'] == pilih_cluster
-    ].index.tolist()
-
-    st.subheader(
-        f"📦 Produk dalam Cluster {pilih_cluster}"
-    )
-
-    st.dataframe(
-        pd.DataFrame({
-            'Produk': produk_cluster
-        })
-    )
-
-    # ==========================================
-    # FORECASTING
+    # PILIH PRODUK
     # ==========================================
 
     st.header("📈 Forecasting Barang")
@@ -397,19 +365,15 @@ if uploaded_file is not None:
     )
 
     # ==========================================
-    # DATA PRODUK
+    # AMBIL DATA PRODUK
     # ==========================================
 
     data_produk = filtered_data.loc[produk]
 
-    kolom_hapus = []
-
     if 'Cluster' in data_produk.index:
-        kolom_hapus.append('Cluster')
-
-    data_produk = data_produk.drop(
-        kolom_hapus
-    )
+        data_produk = data_produk.drop(
+            ['Cluster']
+        )
 
     data_produk = pd.to_numeric(
         data_produk
@@ -432,10 +396,8 @@ if uploaded_file is not None:
     metode = st.selectbox(
         "Pilih Metode Forecasting",
         [
-            "Holt-Winters Additive",
             "Holt-Winters Multiplicative",
             "ETS",
-            "Damped Trend",
             "ARIMA",
             "Perbandingan Semua Metode"
         ]
@@ -461,6 +423,7 @@ if uploaded_file is not None:
         data_produk.values,
         marker='o',
         linewidth=2,
+        color='black',
         label='Data Aktual'
     )
 
@@ -479,51 +442,56 @@ if uploaded_file is not None:
     st.pyplot(fig2)
 
     # ==========================================
-    # HOLT-WINTERS ADDITIVE
+    # HOLT-WINTERS MULTIPLICATIVE
     # ==========================================
 
-    if metode == "Holt-Winters Additive":
+    if metode == "Holt-Winters Multiplicative":
 
-        model_hw_add = ExponentialSmoothing(
-            data_produk,
+        data_nonzero = data_produk.copy()
+
+        data_nonzero[data_nonzero <= 0] = 1
+
+        model_hw = ExponentialSmoothing(
+            data_nonzero,
             trend='add',
-            seasonal='add',
+            seasonal='mul',
             seasonal_periods=12
         )
 
-        fit_hw_add = model_hw_add.fit()
+        fit_hw = model_hw.fit()
 
-        forecast_hw_add = fit_hw_add.forecast(
+        forecast_hw = fit_hw.forecast(
             jumlah_forecast
         )
 
-        forecast_hw_add = forecast_hw_add.clip(
+        forecast_hw = forecast_hw.clip(
             lower=0
         )
 
-        mae_hw_add = mean_absolute_error(
-            data_produk,
-            fit_hw_add.fittedvalues
+        mae_hw = mean_absolute_error(
+            data_nonzero,
+            fit_hw.fittedvalues
         )
 
-        rmse_hw_add = np.sqrt(
+        rmse_hw = np.sqrt(
             mean_squared_error(
-                data_produk,
-                fit_hw_add.fittedvalues
+                data_nonzero,
+                fit_hw.fittedvalues
             )
         )
 
-        st.metric(
-            "MAE",
-            f"{mae_hw_add:.2f}"
-        )
+        mape_hw = mean_absolute_percentage_error(
+            data_nonzero,
+            fit_hw.fittedvalues
+        ) * 100
 
-        st.metric(
-            "RMSE",
-            f"{rmse_hw_add:.2f}"
-        )
+        col1, col2, col3 = st.columns(3)
 
-        st.write(forecast_hw_add)
+        col1.metric("MAE", f"{mae_hw:.2f}")
+        col2.metric("RMSE", f"{rmse_hw:.2f}")
+        col3.metric("MAPE", f"{mape_hw:.2f}%")
+
+        st.write(forecast_hw)
 
         fig3, ax3 = plt.subplots(
             figsize=(12,5)
@@ -533,15 +501,17 @@ if uploaded_file is not None:
             data_produk.index,
             data_produk.values,
             marker='o',
+            color='black',
             label='Data Aktual'
         )
 
         ax3.plot(
-            forecast_hw_add.index,
-            forecast_hw_add.values,
+            forecast_hw.index,
+            forecast_hw.values,
             marker='o',
             linestyle='--',
-            label='HW Additive'
+            color='green',
+            label='HW Multiplicative'
         )
 
         ax3.legend()
@@ -555,82 +525,6 @@ if uploaded_file is not None:
         st.pyplot(fig3)
 
     # ==========================================
-    # HOLT-WINTERS MULTIPLICATIVE
-    # ==========================================
-
-    elif metode == "Holt-Winters Multiplicative":
-
-        data_nonzero = data_produk.copy()
-
-        data_nonzero[data_nonzero <= 0] = 1
-
-        model_hw_mul = ExponentialSmoothing(
-            data_nonzero,
-            trend='add',
-            seasonal='mul',
-            seasonal_periods=12
-        )
-
-        fit_hw_mul = model_hw_mul.fit()
-
-        forecast_hw_mul = fit_hw_mul.forecast(
-            jumlah_forecast
-        )
-
-        mae_hw_mul = mean_absolute_error(
-            data_nonzero,
-            fit_hw_mul.fittedvalues
-        )
-
-        rmse_hw_mul = np.sqrt(
-            mean_squared_error(
-                data_nonzero,
-                fit_hw_mul.fittedvalues
-            )
-        )
-
-        st.metric(
-            "MAE",
-            f"{mae_hw_mul:.2f}"
-        )
-
-        st.metric(
-            "RMSE",
-            f"{rmse_hw_mul:.2f}"
-        )
-
-        st.write(forecast_hw_mul)
-
-        fig_mul, ax_mul = plt.subplots(
-            figsize=(12,5)
-        )
-
-        ax_mul.plot(
-            data_produk.index,
-            data_produk.values,
-            marker='o',
-            label='Data Aktual'
-        )
-
-        ax_mul.plot(
-            forecast_hw_mul.index,
-            forecast_hw_mul.values,
-            marker='o',
-            linestyle='--',
-            label='HW Multiplicative'
-        )
-
-        ax_mul.legend()
-
-        ax_mul.grid(
-            True,
-            linestyle='--',
-            alpha=0.5
-        )
-
-        st.pyplot(fig_mul)
-
-    # ==========================================
     # ETS
     # ==========================================
 
@@ -638,9 +532,9 @@ if uploaded_file is not None:
 
         model_ets = ETSModel(
             data_produk,
-            error="add",
-            trend="add",
-            seasonal="add",
+            error='add',
+            trend='add',
+            seasonal='add',
             seasonal_periods=12
         )
 
@@ -662,117 +556,49 @@ if uploaded_file is not None:
             )
         )
 
-        st.metric(
-            "MAE",
-            f"{mae_ets:.2f}"
-        )
+        mape_ets = mean_absolute_percentage_error(
+            data_produk,
+            fit_ets.fittedvalues
+        ) * 100
 
-        st.metric(
-            "RMSE",
-            f"{rmse_ets:.2f}"
-        )
+        col1, col2, col3 = st.columns(3)
+
+        col1.metric("MAE", f"{mae_ets:.2f}")
+        col2.metric("RMSE", f"{rmse_ets:.2f}")
+        col3.metric("MAPE", f"{mape_ets:.2f}%")
 
         st.write(forecast_ets)
 
-        fig_ets, ax_ets = plt.subplots(
+        fig4, ax4 = plt.subplots(
             figsize=(12,5)
         )
 
-        ax_ets.plot(
+        ax4.plot(
             data_produk.index,
             data_produk.values,
             marker='o',
+            color='black',
             label='Data Aktual'
         )
 
-        ax_ets.plot(
+        ax4.plot(
             forecast_ets.index,
             forecast_ets.values,
             marker='o',
             linestyle='--',
+            color='orange',
             label='ETS'
         )
 
-        ax_ets.legend()
+        ax4.legend()
 
-        ax_ets.grid(
+        ax4.grid(
             True,
             linestyle='--',
             alpha=0.5
         )
 
-        st.pyplot(fig_ets)
-
-    # ==========================================
-    # DAMPED TREND
-    # ==========================================
-
-    elif metode == "Damped Trend":
-
-        model_damped = ExponentialSmoothing(
-            data_produk,
-            trend='add',
-            damped_trend=True
-        )
-
-        fit_damped = model_damped.fit()
-
-        forecast_damped = fit_damped.forecast(
-            jumlah_forecast
-        )
-
-        mae_damped = mean_absolute_error(
-            data_produk,
-            fit_damped.fittedvalues
-        )
-
-        rmse_damped = np.sqrt(
-            mean_squared_error(
-                data_produk,
-                fit_damped.fittedvalues
-            )
-        )
-
-        st.metric(
-            "MAE",
-            f"{mae_damped:.2f}"
-        )
-
-        st.metric(
-            "RMSE",
-            f"{rmse_damped:.2f}"
-        )
-
-        st.write(forecast_damped)
-
-        fig_damped, ax_damped = plt.subplots(
-            figsize=(12,5)
-        )
-
-        ax_damped.plot(
-            data_produk.index,
-            data_produk.values,
-            marker='o',
-            label='Data Aktual'
-        )
-
-        ax_damped.plot(
-            forecast_damped.index,
-            forecast_damped.values,
-            marker='o',
-            linestyle='--',
-            label='Damped Trend'
-        )
-
-        ax_damped.legend()
-
-        ax_damped.grid(
-            True,
-            linestyle='--',
-            alpha=0.5
-        )
-
-        st.pyplot(fig_damped)
+        st.pyplot(fig4)
 
     # ==========================================
     # ARIMA
@@ -810,46 +636,49 @@ if uploaded_file is not None:
             )
         )
 
-        st.metric(
-            "MAE",
-            f"{mae_arima:.2f}"
-        )
+        mape_arima = mean_absolute_percentage_error(
+            actual_arima,
+            fitted_arima
+        ) * 100
 
-        st.metric(
-            "RMSE",
-            f"{rmse_arima:.2f}"
-        )
+        col1, col2, col3 = st.columns(3)
+
+        col1.metric("MAE", f"{mae_arima:.2f}")
+        col2.metric("RMSE", f"{rmse_arima:.2f}")
+        col3.metric("MAPE", f"{mape_arima:.2f}%")
 
         st.write(forecast_arima)
 
-        fig_arima, ax_arima = plt.subplots(
+        fig5, ax5 = plt.subplots(
             figsize=(12,5)
         )
 
-        ax_arima.plot(
+        ax5.plot(
             data_produk.index,
             data_produk.values,
             marker='o',
+            color='black',
             label='Data Aktual'
         )
 
-        ax_arima.plot(
+        ax5.plot(
             forecast_arima.index,
             forecast_arima.values,
             marker='o',
             linestyle='--',
+            color='red',
             label='ARIMA'
         )
 
-        ax_arima.legend()
+        ax5.legend()
 
-        ax_arima.grid(
+        ax5.grid(
             True,
             linestyle='--',
             alpha=0.5
         )
 
-        st.pyplot(fig_arima)
+        st.pyplot(fig5)
 
     # ==========================================
     # PERBANDINGAN SEMUA METODE
@@ -857,57 +686,37 @@ if uploaded_file is not None:
 
     else:
 
-        # HW ADDITIVE
-
-        model_hw_add = ExponentialSmoothing(
-            data_produk,
-            trend='add',
-            seasonal='add',
-            seasonal_periods=12
-        )
-
-        fit_hw_add = model_hw_add.fit()
-
-        forecast_hw_add = fit_hw_add.forecast(
-            jumlah_forecast
-        )
-
-        mae_hw_add = mean_absolute_error(
-            data_produk,
-            fit_hw_add.fittedvalues
-        )
-
         # HW MULTIPLICATIVE
 
         data_nonzero = data_produk.copy()
 
         data_nonzero[data_nonzero <= 0] = 1
 
-        model_hw_mul = ExponentialSmoothing(
+        model_hw = ExponentialSmoothing(
             data_nonzero,
             trend='add',
             seasonal='mul',
             seasonal_periods=12
         )
 
-        fit_hw_mul = model_hw_mul.fit()
+        fit_hw = model_hw.fit()
 
-        forecast_hw_mul = fit_hw_mul.forecast(
+        forecast_hw = fit_hw.forecast(
             jumlah_forecast
         )
 
-        mae_hw_mul = mean_absolute_error(
+        mae_hw = mean_absolute_error(
             data_nonzero,
-            fit_hw_mul.fittedvalues
+            fit_hw.fittedvalues
         )
 
         # ETS
 
         model_ets = ETSModel(
             data_produk,
-            error="add",
-            trend="add",
-            seasonal="add",
+            error='add',
+            trend='add',
+            seasonal='add',
             seasonal_periods=12
         )
 
@@ -920,25 +729,6 @@ if uploaded_file is not None:
         mae_ets = mean_absolute_error(
             data_produk,
             fit_ets.fittedvalues
-        )
-
-        # DAMPED
-
-        model_damped = ExponentialSmoothing(
-            data_produk,
-            trend='add',
-            damped_trend=True
-        )
-
-        fit_damped = model_damped.fit()
-
-        forecast_damped = fit_damped.forecast(
-            jumlah_forecast
-        )
-
-        mae_damped = mean_absolute_error(
-            data_produk,
-            fit_damped.fittedvalues
         )
 
         # ARIMA
@@ -973,21 +763,26 @@ if uploaded_file is not None:
         perbandingan = pd.DataFrame({
 
             'Metode': [
-                'HW Additive',
                 'HW Multiplicative',
                 'ETS',
-                'Damped Trend',
                 'ARIMA'
             ],
 
             'MAE': [
-                mae_hw_add,
-                mae_hw_mul,
+                mae_hw,
                 mae_ets,
-                mae_damped,
                 mae_arima
             ]
         })
+
+        perbandingan = perbandingan.sort_values(
+            by='MAE'
+        )
+
+        perbandingan['Ranking'] = range(
+            1,
+            len(perbandingan)+1
+        )
 
         st.subheader(
             "📊 Perbandingan Metode"
@@ -1005,16 +800,21 @@ if uploaded_file is not None:
         # ==========================================
 
         fig_mae, ax_mae = plt.subplots(
-            figsize=(10,5)
+            figsize=(8,5)
         )
 
         ax_mae.bar(
             perbandingan['Metode'],
-            perbandingan['MAE']
+            perbandingan['MAE'],
+            color=['green', 'orange', 'red']
         )
 
         ax_mae.set_title(
             'Perbandingan Nilai MAE'
+        )
+
+        ax_mae.set_ylabel(
+            'MAE'
         )
 
         ax_mae.grid(
@@ -1029,15 +829,15 @@ if uploaded_file is not None:
         # METODE TERBAIK
         # ==========================================
 
-        metode_terbaik = perbandingan.loc[
-            perbandingan['MAE'].idxmin()
-        ]
+        metode_terbaik = perbandingan.iloc[0]
 
         st.success(
-            f"Metode terbaik adalah "
-            f"{metode_terbaik['Metode']} "
-            f"dengan nilai MAE "
-            f"{metode_terbaik['MAE']:.2f}"
+            f"""
+            Metode terbaik adalah
+            {metode_terbaik['Metode']}
+            dengan nilai MAE
+            {metode_terbaik['MAE']:.2f}
+            """
         )
 
         # ==========================================
@@ -1053,22 +853,16 @@ if uploaded_file is not None:
             data_produk.values,
             marker='o',
             linewidth=2,
+            color='black',
             label='Data Aktual'
         )
 
         ax6.plot(
-            forecast_hw_add.index,
-            forecast_hw_add.values,
+            forecast_hw.index,
+            forecast_hw.values,
             linestyle='--',
             marker='o',
-            label='HW Additive'
-        )
-
-        ax6.plot(
-            forecast_hw_mul.index,
-            forecast_hw_mul.values,
-            linestyle='--',
-            marker='o',
+            color='green',
             label='HW Multiplicative'
         )
 
@@ -1077,15 +871,8 @@ if uploaded_file is not None:
             forecast_ets.values,
             linestyle='--',
             marker='o',
+            color='orange',
             label='ETS'
-        )
-
-        ax6.plot(
-            forecast_damped.index,
-            forecast_damped.values,
-            linestyle='--',
-            marker='o',
-            label='Damped Trend'
         )
 
         ax6.plot(
@@ -1093,6 +880,7 @@ if uploaded_file is not None:
             forecast_arima.values,
             linestyle='--',
             marker='o',
+            color='red',
             label='ARIMA'
         )
 
