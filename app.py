@@ -566,7 +566,7 @@ if uploaded_file is not None:
             train,
             trend='add',
             seasonal='add',
-            seasonal_periods=12
+            seasonal_periods=6
         )
 
         fit = model.fit()
@@ -673,7 +673,7 @@ if uploaded_file is not None:
             train_nonzero,
             trend='add',
             seasonal='mul',
-            seasonal_periods=12
+            seasonal_periods=6
         )
 
         fit = model.fit()
@@ -775,7 +775,7 @@ if uploaded_file is not None:
             error="add",
             trend="add",
             seasonal="add",
-            seasonal_periods=12
+            seasonal_periods=6
         )
 
         fit = model.fit()
