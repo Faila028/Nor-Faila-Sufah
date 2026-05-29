@@ -902,10 +902,10 @@ if uploaded_file is not None:
 
         perbandingan = pd.DataFrame({
 
-            'Metode': [
+             'Metode': [
                 'HW Additive',
                 'HW Multiplicative',
-                'ETS',
+                   'ETS',
                 'ARIMA'
             ],
 
@@ -917,17 +917,48 @@ if uploaded_file is not None:
             ]
         })
 
+        # ==========================================
+        # INDEX MULAI DARI 1
+        # ==========================================
+
         perbandingan.index = np.arange(
             1,
             len(perbandingan) + 1
         )
 
-        st.dataframe(
-            perbandingan.style.highlight_min(
-                axis=0,
-                color='lightgreen'
-            )
+        # ==========================================
+        # CARI MAE TERKECIL
+        # ==========================================
+
+        min_mae = perbandingan['MAE'].min()
+
+        # ==========================================
+        # FUNGSI WARNA
+        # ==========================================
+
+        def highlight_best(row):
+
+            if row['MAE'] == min_mae:
+
+                return [
+                    'background-color: lightgreen',
+                    'background-color: lightgreen'
+                ]
+
+            else:
+
+                return ['', '']
+
+        # ==========================================
+        # TAMPILKAN TABEL
+        # ==========================================
+
+        styled_df = perbandingan.style.apply(
+            highlight_best,
+            axis=1
         )
+
+        st.dataframe(styled_df)
 
         # ==========================================
         # METODE TERBAIK
