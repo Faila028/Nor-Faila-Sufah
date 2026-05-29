@@ -292,14 +292,16 @@ if uploaded_file is not None:
     st.pyplot(fig1)
 
     # ==========================================
-    # PILIH CLUSTER
+    # JUMLAH CLUSTER
     # ==========================================
 
-    jumlah_cluster = st.slider(
-        "Pilih Jumlah Cluster",
-        min_value=3,
-        max_value=3,
-        value=3
+    jumlah_cluster = 3
+
+    st.info(
+        "Jumlah cluster ditetapkan sebanyak 3 kategori:\n"
+        "- Fast Moving\n"
+        "- Medium Moving\n"
+        "- Slow Moving"
     )
 
     # ==========================================
