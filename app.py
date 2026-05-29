@@ -222,10 +222,24 @@ if uploaded_file is not None:
         pivot_table['Total'] > 1
     ]
 
+    # ==========================================
+    # TOTAL UNTUK LABELING
+    # ==========================================
+
+    total_produk = filtered_data['Total']
+
+    filtered_data_cluster = filtered_data.drop(
+        columns=['Total']
+    )
+
+    # ==========================================
+    # NORMALISASI
+    # ==========================================
+
     scaler = StandardScaler()
 
     scaled_data = scaler.fit_transform(
-        filtered_data.drop(columns=['Total'])
+        filtered_data_cluster
     )
 
     # ==========================================
@@ -283,8 +297,8 @@ if uploaded_file is not None:
 
     jumlah_cluster = st.slider(
         "Pilih Jumlah Cluster",
-        min_value=2,
-        max_value=10,
+        min_value=3,
+        max_value=3,
         value=3
     )
 
@@ -301,74 +315,65 @@ if uploaded_file is not None:
         scaled_data
     )
 
-    filtered_data['Cluster'] = cluster
+    filtered_data_cluster['Cluster_Asli'] = cluster
 
     # ==========================================
-    # MENENTUKAN FAST - MEDIUM - SLOW
+    # RANKING CLUSTER
     # ==========================================
 
-    cluster_avg = filtered_data.groupby(
-        'Cluster'
+    filtered_data_cluster['Total'] = total_produk.values
+
+    rata_cluster = filtered_data_cluster.groupby(
+        'Cluster_Asli'
     )['Total'].mean().sort_values(
         ascending=False
     )
 
     mapping_cluster = {}
 
-    if len(cluster_avg) >= 3:
+    kategori_cluster = [
+        'Fast Moving',
+        'Medium Moving',
+        'Slow Moving'
+    ]
 
-        mapping_cluster[
-            cluster_avg.index[0]
-        ] = 'Fast Moving'
+    for i, cluster_id in enumerate(rata_cluster.index):
 
-        mapping_cluster[
-            cluster_avg.index[1]
-        ] = 'Medium Moving'
+        mapping_cluster[cluster_id] = kategori_cluster[i]
 
-        mapping_cluster[
-            cluster_avg.index[2]
-        ] = 'Slow Moving'
-
-    filtered_data['Kategori'] = (
-        filtered_data['Cluster']
+    filtered_data_cluster['Kategori'] = (
+        filtered_data_cluster['Cluster_Asli']
         .map(mapping_cluster)
     )
 
     # ==========================================
-    # JUMLAH PRODUK PER CLUSTER
+    # TABEL CLUSTER
     # ==========================================
-
-    cluster_count = filtered_data[
-        'Kategori'
-    ].value_counts().reindex([
-        'Fast Moving',
-        'Medium Moving',
-        'Slow Moving'
-    ])
-
-    tabel_cluster = pd.DataFrame({
-        'Kategori': cluster_count.index,
-        'Jumlah Produk': cluster_count.values
-    })
-
-    # INDEX DIMULAI DARI 1
-
-    tabel_cluster.index = range(
-        1,
-        len(tabel_cluster) + 1
-    )
 
     st.subheader(
         "📊 Jumlah Produk per Cluster"
     )
 
-    st.dataframe(
-        tabel_cluster,
-        use_container_width=True
+    cluster_count = filtered_data_cluster[
+        'Kategori'
+    ].value_counts().reindex(
+        kategori_cluster
     )
 
+    df_cluster = pd.DataFrame({
+        'Kategori': cluster_count.index,
+        'Jumlah Produk': cluster_count.values
+    })
+
+    df_cluster.index = np.arange(
+        1,
+        len(df_cluster) + 1
+    )
+
+    st.dataframe(df_cluster)
+
     # ==========================================
-    # VISUALISASI CLUSTER
+    # GRAFIK CLUSTER
     # ==========================================
 
     fig_cluster, ax_cluster = plt.subplots(
@@ -376,16 +381,12 @@ if uploaded_file is not None:
     )
 
     ax_cluster.bar(
-        tabel_cluster['Kategori'],
-        tabel_cluster['Jumlah Produk']
+        cluster_count.index,
+        cluster_count.values
     )
 
     ax_cluster.set_title(
         'Distribusi Produk per Cluster'
-    )
-
-    ax_cluster.set_xlabel(
-        'Kategori Cluster'
     )
 
     ax_cluster.set_ylabel(
@@ -405,42 +406,29 @@ if uploaded_file is not None:
     # ==========================================
 
     pilih_cluster = st.selectbox(
-        "Pilih Cluster",
-        [
-            'Fast Moving',
-            'Medium Moving',
-            'Slow Moving'
-        ]
+        "Pilih Kategori Cluster",
+        kategori_cluster
     )
 
-    produk_cluster = filtered_data[
-        filtered_data['Kategori']
+    produk_cluster = filtered_data_cluster[
+        filtered_data_cluster['Kategori']
         == pilih_cluster
     ].index.tolist()
-
-    # ==========================================
-    # TAMPILKAN PRODUK
-    # ==========================================
 
     st.subheader(
         f"📦 Produk dalam {pilih_cluster}"
     )
 
-    df_produk_cluster = pd.DataFrame({
+    df_produk = pd.DataFrame({
         'Produk': produk_cluster
     })
 
-    # INDEX DIMULAI DARI 1
-
-    df_produk_cluster.index = range(
+    df_produk.index = np.arange(
         1,
-        len(df_produk_cluster) + 1
+        len(df_produk) + 1
     )
 
-    st.dataframe(
-        df_produk_cluster,
-        use_container_width=True
-    )
+    st.dataframe(df_produk)
 
     # ==========================================
     # FORECASTING
@@ -448,19 +436,25 @@ if uploaded_file is not None:
 
     st.header("📈 Forecasting Barang")
 
-    daftar_produk = filtered_data.index.tolist()
+    daftar_produk = (
+        filtered_data_cluster.index.tolist()
+    )
 
     produk = st.selectbox(
         "Pilih Produk",
         daftar_produk
     )
 
-    data_produk = filtered_data.loc[
+    # ==========================================
+    # DATA PRODUK
+    # ==========================================
+
+    data_produk = filtered_data_cluster.loc[
         produk
     ]
 
     kolom_hapus = [
-        'Cluster',
+        'Cluster_Asli',
         'Kategori',
         'Total'
     ]
@@ -498,12 +492,37 @@ if uploaded_file is not None:
         ]
     )
 
+    # ==========================================
+    # FORECAST
+    # ==========================================
+
     jumlah_forecast = st.slider(
         "Jumlah Forecast Bulan",
         1,
-        12,
-        6
+        6,
+        3
     )
+
+    # ==========================================
+    # TRAIN TEST SPLIT
+    # ==========================================
+
+    train = data_produk[:-jumlah_forecast]
+
+    test = data_produk[-jumlah_forecast:]
+
+    # ==========================================
+    # VALIDASI DATA
+    # ==========================================
+
+    if len(train) < 12:
+
+        st.warning(
+            "Data training terlalu sedikit "
+            "untuk forecasting musiman."
+        )
+
+        st.stop()
 
     # ==========================================
     # VISUAL DATA AKTUAL
@@ -536,89 +555,13 @@ if uploaded_file is not None:
     st.pyplot(fig2)
 
     # ==========================================
-    # FUNGSI TAMPILKAN HASIL
-    # ==========================================
-
-    def tampilkan_hasil(
-        nama_metode,
-        forecast,
-        mae,
-        rmse
-    ):
-
-        st.metric(
-            "MAE",
-            f"{mae:.2f}"
-        )
-
-        st.metric(
-            "RMSE",
-            f"{rmse:.2f}"
-        )
-
-        forecast_df = pd.DataFrame({
-            'Periode Forecast': forecast.index,
-            'Hasil Forecast': np.round(
-                forecast.values,
-                2
-            )
-        })
-
-        forecast_df.index = range(
-            1,
-            len(forecast_df) + 1
-        )
-
-        st.subheader(
-            "📋 Hasil Forecast"
-        )
-
-        st.dataframe(
-            forecast_df,
-            use_container_width=True
-        )
-
-        fig, ax = plt.subplots(
-            figsize=(12,5)
-        )
-
-        ax.plot(
-            data_produk.index,
-            data_produk.values,
-            marker='o',
-            label='Data Aktual'
-        )
-
-        ax.plot(
-            forecast.index,
-            forecast.values,
-            marker='o',
-            linestyle='--',
-            label=nama_metode
-        )
-
-        ax.set_title(
-            f'Forecast {nama_metode}'
-        )
-
-        ax.legend()
-
-        ax.grid(
-            True,
-            linestyle='--',
-            alpha=0.5
-        )
-
-        st.pyplot(fig)
-
-    # ==========================================
     # HOLT WINTERS ADDITIVE
     # ==========================================
 
     if metode == "Holt-Winters Additive":
 
         model = ExponentialSmoothing(
-            data_produk,
+            train,
             trend='add',
             seasonal='add',
             seasonal_periods=12
@@ -635,23 +578,82 @@ if uploaded_file is not None:
         )
 
         mae = mean_absolute_error(
-            data_produk,
-            fit.fittedvalues
+            test,
+            forecast
         )
 
         rmse = np.sqrt(
             mean_squared_error(
-                data_produk,
-                fit.fittedvalues
+                test,
+                forecast
             )
         )
 
-        tampilkan_hasil(
-            "HW Additive",
-            forecast,
-            mae,
-            rmse
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.metric(
+                "MAE",
+                f"{mae:.2f}"
+            )
+
+        with col2:
+            st.metric(
+                "RMSE",
+                f"{rmse:.2f}"
+            )
+
+        hasil_forecast = pd.DataFrame({
+            'Periode': forecast.index,
+            'Forecast': forecast.values
+        })
+
+        hasil_forecast.index = np.arange(
+            1,
+            len(hasil_forecast) + 1
         )
+
+        st.subheader(
+            "📋 Hasil Forecast"
+        )
+
+        st.dataframe(hasil_forecast)
+
+        fig3, ax3 = plt.subplots(
+            figsize=(12,5)
+        )
+
+        ax3.plot(
+            train.index,
+            train.values,
+            marker='o',
+            label='Training'
+        )
+
+        ax3.plot(
+            test.index,
+            test.values,
+            marker='o',
+            label='Data Aktual'
+        )
+
+        ax3.plot(
+            forecast.index,
+            forecast.values,
+            marker='o',
+            linestyle='--',
+            label='Forecast'
+        )
+
+        ax3.legend()
+
+        ax3.grid(
+            True,
+            linestyle='--',
+            alpha=0.5
+        )
+
+        st.pyplot(fig3)
 
     # ==========================================
     # HOLT WINTERS MULTIPLICATIVE
@@ -659,14 +661,14 @@ if uploaded_file is not None:
 
     elif metode == "Holt-Winters Multiplicative":
 
-        data_nonzero = data_produk.copy()
+        train_nonzero = train.copy()
 
-        data_nonzero[
-            data_nonzero <= 0
+        train_nonzero[
+            train_nonzero <= 0
         ] = 1
 
         model = ExponentialSmoothing(
-            data_nonzero,
+            train_nonzero,
             trend='add',
             seasonal='mul',
             seasonal_periods=12
@@ -678,24 +680,87 @@ if uploaded_file is not None:
             jumlah_forecast
         )
 
+        forecast = forecast.clip(
+            lower=0
+        )
+
         mae = mean_absolute_error(
-            data_nonzero,
-            fit.fittedvalues
+            test,
+            forecast
         )
 
         rmse = np.sqrt(
             mean_squared_error(
-                data_nonzero,
-                fit.fittedvalues
+                test,
+                forecast
             )
         )
 
-        tampilkan_hasil(
-            "HW Multiplicative",
-            forecast,
-            mae,
-            rmse
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.metric(
+                "MAE",
+                f"{mae:.2f}"
+            )
+
+        with col2:
+            st.metric(
+                "RMSE",
+                f"{rmse:.2f}"
+            )
+
+        hasil_forecast = pd.DataFrame({
+            'Periode': forecast.index,
+            'Forecast': forecast.values
+        })
+
+        hasil_forecast.index = np.arange(
+            1,
+            len(hasil_forecast) + 1
         )
+
+        st.subheader(
+            "📋 Hasil Forecast"
+        )
+
+        st.dataframe(hasil_forecast)
+
+        fig4, ax4 = plt.subplots(
+            figsize=(12,5)
+        )
+
+        ax4.plot(
+            train.index,
+            train.values,
+            marker='o',
+            label='Training'
+        )
+
+        ax4.plot(
+            test.index,
+            test.values,
+            marker='o',
+            label='Data Aktual'
+        )
+
+        ax4.plot(
+            forecast.index,
+            forecast.values,
+            marker='o',
+            linestyle='--',
+            label='Forecast'
+        )
+
+        ax4.legend()
+
+        ax4.grid(
+            True,
+            linestyle='--',
+            alpha=0.5
+        )
+
+        st.pyplot(fig4)
 
     # ==========================================
     # ETS
@@ -704,7 +769,7 @@ if uploaded_file is not None:
     elif metode == "ETS":
 
         model = ETSModel(
-            data_produk,
+            train,
             error="add",
             trend="add",
             seasonal="add",
@@ -717,24 +782,87 @@ if uploaded_file is not None:
             jumlah_forecast
         )
 
+        forecast = forecast.clip(
+            lower=0
+        )
+
         mae = mean_absolute_error(
-            data_produk,
-            fit.fittedvalues
+            test,
+            forecast
         )
 
         rmse = np.sqrt(
             mean_squared_error(
-                data_produk,
-                fit.fittedvalues
+                test,
+                forecast
             )
         )
 
-        tampilkan_hasil(
-            "ETS",
-            forecast,
-            mae,
-            rmse
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.metric(
+                "MAE",
+                f"{mae:.2f}"
+            )
+
+        with col2:
+            st.metric(
+                "RMSE",
+                f"{rmse:.2f}"
+            )
+
+        hasil_forecast = pd.DataFrame({
+            'Periode': forecast.index,
+            'Forecast': forecast.values
+        })
+
+        hasil_forecast.index = np.arange(
+            1,
+            len(hasil_forecast) + 1
         )
+
+        st.subheader(
+            "📋 Hasil Forecast"
+        )
+
+        st.dataframe(hasil_forecast)
+
+        fig5, ax5 = plt.subplots(
+            figsize=(12,5)
+        )
+
+        ax5.plot(
+            train.index,
+            train.values,
+            marker='o',
+            label='Training'
+        )
+
+        ax5.plot(
+            test.index,
+            test.values,
+            marker='o',
+            label='Data Aktual'
+        )
+
+        ax5.plot(
+            forecast.index,
+            forecast.values,
+            marker='o',
+            linestyle='--',
+            label='Forecast'
+        )
+
+        ax5.legend()
+
+        ax5.grid(
+            True,
+            linestyle='--',
+            alpha=0.5
+        )
+
+        st.pyplot(fig5)
 
     # ==========================================
     # ARIMA
@@ -743,7 +871,7 @@ if uploaded_file is not None:
     elif metode == "ARIMA":
 
         model = ARIMA(
-            data_produk,
+            train,
             order=(1,1,1)
         )
 
@@ -753,257 +881,76 @@ if uploaded_file is not None:
             steps=jumlah_forecast
         )
 
-        fitted = fit.predict(
-            start=1,
-            end=len(data_produk)-1
+        forecast = forecast.clip(
+            lower=0
         )
 
-        actual = data_produk[1:]
-
         mae = mean_absolute_error(
-            actual,
-            fitted
+            test,
+            forecast
         )
 
         rmse = np.sqrt(
             mean_squared_error(
-                actual,
-                fitted
+                test,
+                forecast
             )
         )
 
-        tampilkan_hasil(
-            "ARIMA",
-            forecast,
-            mae,
-            rmse
-        )
+        col1, col2 = st.columns(2)
 
-    # ==========================================
-    # PERBANDINGAN SEMUA METODE
-    # ==========================================
+        with col1:
+            st.metric(
+                "MAE",
+                f"{mae:.2f}"
+            )
 
-    else:
+        with col2:
+            st.metric(
+                "RMSE",
+                f"{rmse:.2f}"
+            )
 
-        hasil = {}
-
-        # HW ADDITIVE
-
-        model_hw_add = ExponentialSmoothing(
-            data_produk,
-            trend='add',
-            seasonal='add',
-            seasonal_periods=12
-        )
-
-        fit_hw_add = model_hw_add.fit()
-
-        forecast_hw_add = fit_hw_add.forecast(
-            jumlah_forecast
-        )
-
-        mae_hw_add = mean_absolute_error(
-            data_produk,
-            fit_hw_add.fittedvalues
-        )
-
-        # HW MULTIPLICATIVE
-
-        data_nonzero = data_produk.copy()
-
-        data_nonzero[
-            data_nonzero <= 0
-        ] = 1
-
-        model_hw_mul = ExponentialSmoothing(
-            data_nonzero,
-            trend='add',
-            seasonal='mul',
-            seasonal_periods=12
-        )
-
-        fit_hw_mul = model_hw_mul.fit()
-
-        forecast_hw_mul = fit_hw_mul.forecast(
-            jumlah_forecast
-        )
-
-        mae_hw_mul = mean_absolute_error(
-            data_nonzero,
-            fit_hw_mul.fittedvalues
-        )
-
-        # ETS
-
-        model_ets = ETSModel(
-            data_produk,
-            error="add",
-            trend="add",
-            seasonal="add",
-            seasonal_periods=12
-        )
-
-        fit_ets = model_ets.fit()
-
-        forecast_ets = fit_ets.forecast(
-            jumlah_forecast
-        )
-
-        mae_ets = mean_absolute_error(
-            data_produk,
-            fit_ets.fittedvalues
-        )
-
-        # ARIMA
-
-        model_arima = ARIMA(
-            data_produk,
-            order=(1,1,1)
-        )
-
-        fit_arima = model_arima.fit()
-
-        forecast_arima = fit_arima.forecast(
-            steps=jumlah_forecast
-        )
-
-        fitted_arima = fit_arima.predict(
-            start=1,
-            end=len(data_produk)-1
-        )
-
-        actual_arima = data_produk[1:]
-
-        mae_arima = mean_absolute_error(
-            actual_arima,
-            fitted_arima
-        )
-
-        # ==========================================
-        # TABEL PERBANDINGAN
-        # ==========================================
-
-        perbandingan = pd.DataFrame({
-
-            'Metode': [
-                'HW Additive',
-                'HW Multiplicative',
-                'ETS',
-                'ARIMA'
-            ],
-
-            'MAE': [
-                mae_hw_add,
-                mae_hw_mul,
-                mae_ets,
-                mae_arima
-            ]
+        hasil_forecast = pd.DataFrame({
+            'Periode': forecast.index,
+            'Forecast': forecast.values
         })
 
-        perbandingan.index = range(
+        hasil_forecast.index = np.arange(
             1,
-            len(perbandingan) + 1
+            len(hasil_forecast) + 1
         )
 
         st.subheader(
-            "📊 Perbandingan Metode"
+            "📋 Hasil Forecast"
         )
 
-        st.dataframe(
-            perbandingan,
-            use_container_width=True
-        )
-
-        # ==========================================
-        # GRAFIK MAE
-        # ==========================================
-
-        fig_mae, ax_mae = plt.subplots(
-            figsize=(10,5)
-        )
-
-        ax_mae.bar(
-            perbandingan['Metode'],
-            perbandingan['MAE']
-        )
-
-        ax_mae.set_title(
-            'Perbandingan Nilai MAE'
-        )
-
-        ax_mae.grid(
-            True,
-            linestyle='--',
-            alpha=0.5
-        )
-
-        st.pyplot(fig_mae)
-
-        # ==========================================
-        # METODE TERBAIK
-        # ==========================================
-
-        metode_terbaik = perbandingan.loc[
-            perbandingan['MAE'].idxmin()
-        ]
-
-        st.success(
-            f"Metode terbaik adalah "
-            f"{metode_terbaik['Metode']} "
-            f"dengan nilai MAE "
-            f"{metode_terbaik['MAE']:.2f}"
-        )
-
-        # ==========================================
-        # VISUALISASI GABUNGAN
-        # ==========================================
+        st.dataframe(hasil_forecast)
 
         fig6, ax6 = plt.subplots(
-            figsize=(14,6)
+            figsize=(12,5)
         )
 
         ax6.plot(
-            data_produk.index,
-            data_produk.values,
+            train.index,
+            train.values,
             marker='o',
-            linewidth=2,
+            label='Training'
+        )
+
+        ax6.plot(
+            test.index,
+            test.values,
+            marker='o',
             label='Data Aktual'
         )
 
         ax6.plot(
-            forecast_hw_add.index,
-            forecast_hw_add.values,
-            linestyle='--',
+            forecast.index,
+            forecast.values,
             marker='o',
-            label='HW Additive'
-        )
-
-        ax6.plot(
-            forecast_hw_mul.index,
-            forecast_hw_mul.values,
             linestyle='--',
-            marker='o',
-            label='HW Multiplicative'
-        )
-
-        ax6.plot(
-            forecast_ets.index,
-            forecast_ets.values,
-            linestyle='--',
-            marker='o',
-            label='ETS'
-        )
-
-        ax6.plot(
-            forecast_arima.index,
-            forecast_arima.values,
-            linestyle='--',
-            marker='o',
-            label='ARIMA'
-        )
-
-        ax6.set_title(
-            f'Perbandingan Forecast Produk {produk}'
+            label='Forecast'
         )
 
         ax6.legend()
