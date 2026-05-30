@@ -539,114 +539,115 @@ if uploaded_file is not None:
     # FUNGSI TAMPILKAN HASIL
     # ==========================================
 
-    def tampilkan_hasil(
-        nama_metode,
-        forecast,
-        aktual,
-        fitted
-    ):
-        
-        error = aktual - fitted
-        
-        mae_bulanan = np.abs(error)
-        
-        rmse_bulanan = np.sqrt(error ** 2)
-        
-        evaluasi_df = pd.DataFrame({
-            'Aktual': np.round(aktual.values, 2),
-            'Prediksi': np.round(fitted.values, 2),
-            'MAE Bulanan': np.round(mae_bulanan.values, 2),
-            'RMSE Bulanan': np.round(rmse_bulanan.values, 2)
-        })
-        
-        evaluasi_df.index = aktual.index
-        
-        st.subheader("📊 Evaluasi Per Bulan")
-        
-        st.dataframe(
-            evaluasi_df,
-            use_container_width=True
-        )
-        
-        mae_total = mean_absolute_error(
-            aktual,
-            fitted
-        )
-        
-        rmse_total = np.sqrt(
-            mean_squared_error(
-                aktual,
-                fitted
-            )
-        )
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.metric(
-                "MAE Keseluruhan",
-                f"{mae_total:.2f}"
-            )
-        
-        with col2:
-            st.metric(
-                "RMSE Keseluruhan",
-                f"{rmse_total:.2f}"
-            )
-        
-        forecast_df = pd.DataFrame({
-            'Periode Forecast': forecast.index,
-            'Hasil Forecast': np.round(
-                forecast.values,
-                2
-            )
-        })
-        
-        forecast_df.index = range(
-            1,
-            len(forecast_df) + 1
-        )
-        
-        st.subheader("📋 Hasil Forecast")
-        
-        st.dataframe(
-            forecast_df,
-            use_container_width=True
-        )
-        
-        fig, ax = plt.subplots(
-            figsize=(12,5)
-        )
-        
-        ax.plot(
-            aktual.index,
-            aktual.values,
-            marker='o',
-            label='Data Aktual'
-        )
-        
-        ax.plot(
-            forecast.index,
-            forecast.values,
-            marker='o',
-            linestyle='--',
-            label=nama_metode
-        )
-        
-        ax.set_title(
-            f'Forecast {nama_metode}'
-        )
-        
-        ax.legend()
-        
-        ax.grid(
-            True,
-            linestyle='--',
-            alpha=0.5
-        )
-        
-        st.pyplot(fig)
+    # ==========================================
+# FUNGSI TAMPILKAN HASIL
+# ==========================================
 
+def tampilkan_hasil(
+    nama_metode,
+    forecast,
+    aktual,
+    fitted,
+    mae,
+    rmse
+):
+
+    st.metric(
+        "MAE",
+        f"{mae:.2f}"
+    )
+
+    st.metric(
+        "RMSE",
+        f"{rmse:.2f}"
+    )
+
+    # ======================================
+    # MAE DAN RMSE BULANAN
+    # ======================================
+
+    error = aktual - fitted
+
+    mae_bulanan = np.abs(error)
+
+    rmse_bulanan = np.sqrt(error**2)
+
+    evaluasi_df = pd.DataFrame({
+        'Aktual': np.round(aktual.values, 2),
+        'Prediksi': np.round(fitted.values, 2),
+        'MAE Bulanan': np.round(mae_bulanan.values, 2),
+        'RMSE Bulanan': np.round(rmse_bulanan.values, 2)
+    })
+
+    evaluasi_df.index = aktual.index
+
+    st.subheader("📊 Evaluasi Bulanan")
+
+    st.dataframe(
+        evaluasi_df,
+        use_container_width=True
+    )
+
+    # ======================================
+    # HASIL FORECAST
+    # ======================================
+
+    forecast_df = pd.DataFrame({
+        'Periode Forecast': forecast.index,
+        'Hasil Forecast': np.round(
+            forecast.values,
+            2
+        ),
+        'MAE': round(mae, 2),
+        'RMSE': round(rmse, 2)
+    })
+    
+    forecast_df.index = range(
+        1,
+        len(forecast_df) + 1
+    )
+
+    st.subheader(
+        "📋 Hasil Forecast"
+    )
+
+    st.dataframe(
+        forecast_df,
+        use_container_width=True
+    )
+
+    fig, ax = plt.subplots(
+        figsize=(12,5)
+    )
+
+    ax.plot(
+        data_produk.index,
+        data_produk.values,
+        marker='o',
+        label='Data Aktual'
+    )
+
+    ax.plot(
+        forecast.index,
+        forecast.values,
+        marker='o',
+        linestyle='--',
+        label=nama_metode
+    )
+
+    ax.set_title(
+        f'Forecast {nama_metode}'
+    )
+
+    ax.legend()
+
+    ax.grid(
+        True,
+        linestyle='--',
+        alpha=0.5
+    )
+
+    st.pyplot(fig)
     # ==========================================
     # HOLT WINTERS ADDITIVE
     # ==========================================
@@ -729,7 +730,9 @@ if uploaded_file is not None:
             "HW Multiplicative",
             forecast,
             data_nonzero,
-            fit.fittedvalues
+            fit.fittedvalues,
+            mae,
+            rmse
         )
     # ==========================================
     # ETS
@@ -767,7 +770,9 @@ if uploaded_file is not None:
             "ETS",
             forecast,
             data_produk,
-            fit.fittedvalues
+            fit.fittedvalues,
+            mae,
+            rmse
         )
 
     # ==========================================
@@ -815,7 +820,9 @@ if uploaded_file is not None:
             "ARIMA",
             forecast,
             actual,
-            fitted_series
+            fitted,
+            mae,
+            rmse
         )
 
     # ==========================================
