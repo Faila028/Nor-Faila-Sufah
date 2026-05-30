@@ -448,7 +448,17 @@ if uploaded_file is not None:
 
     st.header("📈 Forecasting Barang")
 
-    daftar_produk = filtered_data.index.tolist()
+    # HANYA PRODUK DALAM CLUSTER YANG DIPILIH
+
+    daftar_produk = produk_cluster
+
+    if len(daftar_produk) == 0:
+
+        st.warning(
+            "Tidak ada produk pada cluster ini."
+        )
+
+        st.stop()
 
     produk = st.selectbox(
         "Pilih Produk",
