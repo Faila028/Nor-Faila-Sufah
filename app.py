@@ -646,7 +646,6 @@ if uploaded_file is not None:
         )
         
         st.pyplot(fig)
-        ```
 
     # ==========================================
     # HOLT WINTERS ADDITIVE
