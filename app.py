@@ -442,13 +442,18 @@ if uploaded_file is not None:
         use_container_width=True
     )
 
+    if bulan_aktif < 12:
+        seasonal_period = 6
+    else:
+        seasonal_period = 12
+
     # ==========================================
     # FORECASTING
     # ==========================================
 
     st.header("📈 Forecasting Barang")
 
-    daftar_produk = filtered_data.index.tolist()
+    daftar_produk = produk_cluster
 
     produk = st.selectbox(
         "Pilih Produk",
@@ -470,9 +475,24 @@ if uploaded_file is not None:
     )
 
     data_produk = pd.to_numeric(
-        data_produk
+        data_produk,
+        errors='coerce'
     )
+    
+    data_produk = data_produk.fillna(0)
 
+    bulan_aktif = (data_produk > 0).sum()
+
+    st.info(
+        f"""
+    Produk : {produk}
+
+    Total Keluar : {int(data_produk.sum())}
+
+    Bulan Aktif : {bulan_aktif}
+    """
+    )
+    
     # ==========================================
     # INDEX TANGGAL
     # ==========================================
@@ -621,7 +641,7 @@ if uploaded_file is not None:
             data_produk,
             trend='add',
             seasonal='add',
-            seasonal_periods=12
+            seasonal_periods=seasonal_period
         )
 
         fit = model.fit()
@@ -669,7 +689,7 @@ if uploaded_file is not None:
             data_nonzero,
             trend='add',
             seasonal='mul',
-            seasonal_periods=12
+            seasonal_periods=seasonal_period
         )
 
         fit = model.fit()
@@ -696,7 +716,7 @@ if uploaded_file is not None:
             mae,
             rmse
         )
-
+    forecast = forecast.clip(lower=0)
     # ==========================================
     # ETS
     # ==========================================
@@ -708,7 +728,7 @@ if uploaded_file is not None:
             error="add",
             trend="add",
             seasonal="add",
-            seasonal_periods=12
+            seasonal_periods=seasonal_period
         )
 
         fit = model.fit()
@@ -735,7 +755,7 @@ if uploaded_file is not None:
             mae,
             rmse
         )
-
+    forecast = forecast.clip(lower=0)
     # ==========================================
     # ARIMA
     # ==========================================
@@ -752,7 +772,7 @@ if uploaded_file is not None:
         forecast = fit.forecast(
             steps=jumlah_forecast
         )
-
+        forecast = forecast.clip(lower=0)
         fitted = fit.predict(
             start=1,
             end=len(data_produk)-1
