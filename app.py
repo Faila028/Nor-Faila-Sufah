@@ -539,115 +539,78 @@ if uploaded_file is not None:
     # FUNGSI TAMPILKAN HASIL
     # ==========================================
 
-    # ==========================================
-# FUNGSI TAMPILKAN HASIL
-# ==========================================
+    def tampilkan_hasil(
+        nama_metode,
+        forecast,
+        mae,
+        rmse
+    ):
 
-def tampilkan_hasil(
-    nama_metode,
-    forecast,
-    aktual,
-    fitted,
-    mae,
-    rmse
-):
+        st.metric(
+            "MAE",
+            f"{mae:.2f}"
+        )
 
-    st.metric(
-        "MAE",
-        f"{mae:.2f}"
-    )
+        st.metric(
+            "RMSE",
+            f"{rmse:.2f}"
+        )
 
-    st.metric(
-        "RMSE",
-        f"{rmse:.2f}"
-    )
+        forecast_df = pd.DataFrame({
+            'Periode Forecast': forecast.index,
+            'Hasil Forecast': np.round(
+                forecast.values,
+                2
+            )
+        })
 
-    # ======================================
-    # MAE DAN RMSE BULANAN
-    # ======================================
+        forecast_df.index = range(
+            1,
+            len(forecast_df) + 1
+        )
 
-    error = aktual - fitted
+        st.subheader(
+            "📋 Hasil Forecast"
+        )
 
-    mae_bulanan = np.abs(error)
+        st.dataframe(
+            forecast_df,
+            use_container_width=True
+        )
 
-    rmse_bulanan = np.sqrt(error**2)
+        fig, ax = plt.subplots(
+            figsize=(12,5)
+        )
 
-    evaluasi_df = pd.DataFrame({
-        'Aktual': np.round(aktual.values, 2),
-        'Prediksi': np.round(fitted.values, 2),
-        'MAE Bulanan': np.round(mae_bulanan.values, 2),
-        'RMSE Bulanan': np.round(rmse_bulanan.values, 2)
-    })
+        ax.plot(
+            data_produk.index,
+            data_produk.values,
+            marker='o',
+            label='Data Aktual'
+        )
 
-    evaluasi_df.index = aktual.index
-
-    st.subheader("📊 Evaluasi Bulanan")
-
-    st.dataframe(
-        evaluasi_df,
-        use_container_width=True
-    )
-
-    # ======================================
-    # HASIL FORECAST
-    # ======================================
-
-    forecast_df = pd.DataFrame({
-        'Periode Forecast': forecast.index,
-        'Hasil Forecast': np.round(
+        ax.plot(
+            forecast.index,
             forecast.values,
-            2
-        ),
-        'MAE': round(mae, 2),
-        'RMSE': round(rmse, 2)
-    })
-    
-    forecast_df.index = range(
-        1,
-        len(forecast_df) + 1
-    )
+            marker='o',
+            linestyle='--',
+            label=nama_metode
+        )
 
-    st.subheader(
-        "📋 Hasil Forecast"
-    )
+        ax.set_title(
+            f'Forecast {nama_metode}'
+        )
 
-    st.dataframe(
-        forecast_df,
-        use_container_width=True
-    )
+        ax.legend()
 
-    fig, ax = plt.subplots(
-        figsize=(12,5)
-    )
+        ax.grid(
+            True,
+            linestyle='--',
+            alpha=0.5
+        )
 
-    ax.plot(
-        data_produk.index,
-        data_produk.values,
-        marker='o',
-        label='Data Aktual'
-    )
+        st.pyplot(fig)
 
-    ax.plot(
-        forecast.index,
-        forecast.values,
-        marker='o',
-        linestyle='--',
-        label=nama_metode
-    )
-
-    ax.set_title(
-        f'Forecast {nama_metode}'
-    )
-
-    ax.legend()
-
-    ax.grid(
-        True,
-        linestyle='--',
-        alpha=0.5
-    )
-
-    st.pyplot(fig)
     # ==========================================
     # HOLT WINTERS ADDITIVE
     # ==========================================
@@ -686,9 +649,10 @@ def tampilkan_hasil(
         tampilkan_hasil(
             "HW Additive",
             forecast,
-            data_produk,
-            fit.fittedvalues
+            mae,
+            rmse
         )
+
     # ==========================================
     # HOLT WINTERS MULTIPLICATIVE
     # ==========================================
@@ -729,11 +693,10 @@ def tampilkan_hasil(
         tampilkan_hasil(
             "HW Multiplicative",
             forecast,
-            data_nonzero,
-            fit.fittedvalues,
             mae,
             rmse
         )
+
     # ==========================================
     # ETS
     # ==========================================
@@ -769,8 +732,6 @@ def tampilkan_hasil(
         tampilkan_hasil(
             "ETS",
             forecast,
-            data_produk,
-            fit.fittedvalues,
             mae,
             rmse
         )
@@ -811,16 +772,9 @@ def tampilkan_hasil(
             )
         )
 
-        fitted_series = pd.Series(
-    fitted.values,
-    index=actual.index
-    )
-
         tampilkan_hasil(
             "ARIMA",
             forecast,
-            actual,
-            fitted,
             mae,
             rmse
         )
