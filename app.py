@@ -448,17 +448,7 @@ if uploaded_file is not None:
 
     st.header("📈 Forecasting Barang")
 
-    # HANYA PRODUK DALAM CLUSTER YANG DIPILIH
-
-    daftar_produk = produk_cluster
-
-    if len(daftar_produk) == 0:
-
-        st.warning(
-            "Tidak ada produk pada cluster ini."
-        )
-
-        st.stop()
+    daftar_produk = filtered_data.index.tolist()
 
     produk = st.selectbox(
         "Pilih Produk",
@@ -550,131 +540,118 @@ if uploaded_file is not None:
     # ==========================================
 
     def tampilkan_hasil(
-nama_metode,
-forecast,
-aktual,
-fitted
-):
-    
-# ==========================
-# ERROR PER BULAN
-# ==========================
+        nama_metode,
+        forecast,
+        mae,
+        rmse
+    ):
 
-error = aktual - fitted
+        st.metric(
+            "MAE",
+            f"{mae:.2f}"
+        )
 
-mae_bulanan = np.abs(error)
+        st.metric(
+            "RMSE",
+            f"{rmse:.2f}"
+        )
 
-rmse_bulanan = np.sqrt(error ** 2)
+        forecast_df = pd.DataFrame({
+            'Periode Forecast': forecast.index,
+            'Hasil Forecast': np.round(
+                forecast.values,
+                2
+            )
+        })
 
-evaluasi_df = pd.DataFrame({
-    'Aktual': np.round(aktual.values, 2),
-    'Prediksi': np.round(fitted.values, 2),
-    'MAE Bulanan': np.round(mae_bulanan.values, 2),
-    'RMSE Bulanan': np.round(rmse_bulanan.values, 2)
-})
+        forecast_df.index = range(
+            1,
+            len(forecast_df) + 1
+        )
 
-evaluasi_df.index = aktual.index
+        st.subheader(
+            "📋 Hasil Forecast"
+        )
 
-st.subheader("📊 Evaluasi Per Bulan")
+        st.dataframe(
+            forecast_df,
+            use_container_width=True
+        )
 
-st.dataframe(
-    evaluasi_df,
-    use_container_width=True
-)
+        fig, ax = plt.subplots(
+            figsize=(12,5)
+        )
 
-# ==========================
-# MAE DAN RMSE KESELURUHAN
-# ==========================
+        ax.plot(
+            data_produk.index,
+            data_produk.values,
+            marker='o',
+            label='Data Aktual'
+        )
 
-mae_total = mean_absolute_error(
-    aktual,
-    fitted
-)
+        ax.plot(
+            forecast.index,
+            forecast.values,
+            marker='o',
+            linestyle='--',
+            label=nama_metode
+        )
 
-rmse_total = np.sqrt(
-    mean_squared_error(
-        aktual,
-        fitted
-    )
-)
+        ax.set_title(
+            f'Forecast {nama_metode}'
+        )
 
-col1, col2 = st.columns(2)
+        ax.legend()
 
-with col1:
-    st.metric(
-        "MAE Keseluruhan",
-        f"{mae_total:.2f}"
-    )
+        ax.grid(
+            True,
+            linestyle='--',
+            alpha=0.5
+        )
 
-with col2:
-    st.metric(
-        "RMSE Keseluruhan",
-        f"{rmse_total:.2f}"
-    )
+        st.pyplot(fig)
 
-# ==========================
-# HASIL FORECAST
-# ==========================
+    # ==========================================
+    # HOLT WINTERS ADDITIVE
+    # ==========================================
 
-forecast_df = pd.DataFrame({
-    'Periode Forecast': forecast.index,
-    'Hasil Forecast': np.round(
-        forecast.values,
-        2
-    )
-})
+    if metode == "Holt-Winters Additive":
 
-forecast_df.index = range(
-    1,
-    len(forecast_df) + 1
-)
+        model = ExponentialSmoothing(
+            data_produk,
+            trend='add',
+            seasonal='add',
+            seasonal_periods=12
+        )
 
-st.subheader(
-    "📋 Hasil Forecast"
-)
+        fit = model.fit()
 
-st.dataframe(
-    forecast_df,
-    use_container_width=True
-)
+        forecast = fit.forecast(
+            jumlah_forecast
+        )
 
-# ==========================
-# GRAFIK
-# ==========================
+        forecast = forecast.clip(
+            lower=0
+        )
 
-fig, ax = plt.subplots(
-    figsize=(12,5)
-)
+        mae = mean_absolute_error(
+            data_produk,
+            fit.fittedvalues
+        )
 
-ax.plot(
-    aktual.index,
-    aktual.values,
-    marker='o',
-    label='Data Aktual'
-)
+        rmse = np.sqrt(
+            mean_squared_error(
+                data_produk,
+                fit.fittedvalues
+            )
+        )
 
-ax.plot(
-    forecast.index,
-    forecast.values,
-    marker='o',
-    linestyle='--',
-    label=nama_metode
-)
-
-ax.set_title(
-    f'Forecast {nama_metode}'
-)
-
-ax.legend()
-
-ax.grid(
-    True,
-    linestyle='--',
-    alpha=0.5
-)
-
-st.pyplot(fig)
-```
+        tampilkan_hasil(
+            "HW Additive",
+            forecast,
+            mae,
+            rmse
+        )
 
     # ==========================================
     # HOLT WINTERS MULTIPLICATIVE
