@@ -546,7 +546,6 @@ aktual,
 fitted
 ):
 
-```
 error = aktual - fitted
 
 mae_bulanan = np.abs(error)
