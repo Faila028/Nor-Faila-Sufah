@@ -662,46 +662,46 @@ if uploaded_file is not None:
 
     if metode == "Holt-Winters Additive":
 
-    train = data_produk[:-jumlah_forecast]
+        train = data_produk[:-jumlah_forecast]
 
-    test = data_produk[-jumlah_forecast:]
+        test = data_produk[-jumlah_forecast:]
 
-    model = ExponentialSmoothing(
-        train,
-        trend='add',
-        seasonal='add',
-        seasonal_periods=12
-    )
+        model = ExponentialSmoothing(
+            train,
+            trend='add',
+            seasonal='add',
+            seasonal_periods=12
+        )
 
-    fit = model.fit()
+        fit = model.fit()
 
-    forecast = fit.forecast(
+        forecast = fit.forecast(
         jumlah_forecast
-    )
+        )
 
-    forecast = forecast.clip(
-        lower=0
-    )
+        forecast = forecast.clip(
+            lower=0
+        )
 
-    mae = mean_absolute_error(
-        test,
-        forecast
-    )
-
-    rmse = np.sqrt(
-        mean_squared_error(
+        mae = mean_absolute_error(
             test,
             forecast
         )
-    )
 
-    tampilkan_hasil(
-        "HW Additive",
-        forecast,
-        test,
-        mae,
-        rmse
-    )
+        rmse = np.sqrt(
+            mean_squared_error(
+                test,
+                forecast
+            )
+        )
+
+        tampilkan_hasil(
+            "HW Additive",
+            forecast,
+            test,
+            mae,
+            rmse
+        )
 
     # ==========================================
     # HOLT WINTERS MULTIPLICATIVE
