@@ -685,6 +685,10 @@ if uploaded_file is not None:
             jumlah_forecast
         )
 
+        forecast = forecast.clip(
+            lower=0
+        )
+
         mae = mean_absolute_error(
             data_nonzero,
             fit.fittedvalues
@@ -722,6 +726,10 @@ if uploaded_file is not None:
 
         forecast = fit.forecast(
             jumlah_forecast
+        )
+
+        forecast = forecast.clip(
+            lower=0
         )
 
         mae = mean_absolute_error(
