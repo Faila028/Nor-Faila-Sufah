@@ -448,7 +448,7 @@ if uploaded_file is not None:
 
     st.header("📈 Forecasting Barang")
 
-    daftar_produk = filtered_data.index.tolist()
+    daftar_produk = produk_cluster
 
     produk = st.selectbox(
         "Pilih Produk",
