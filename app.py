@@ -442,6 +442,13 @@ if uploaded_file is not None:
         use_container_width=True
     )
 
+    jumlah_bulan_aktif = (data_produk > 0).sum()
+
+    if jumlah_bulan_aktif < 6:
+        st.warning(
+            "Produk ini hanya aktif kurang dari 6 bulan sehingga hasil forecasting kurang reliabel."
+        )
+
     # ==========================================
     # FORECASTING
     # ==========================================
