@@ -669,8 +669,7 @@ if uploaded_file is not None:
         model = ExponentialSmoothing(
             train,
             trend='add',
-            seasonal='add',
-            seasonal_periods=12
+            seasonal=None
         )
 
         fit = model.fit()
@@ -718,8 +717,7 @@ if uploaded_file is not None:
         model = ExponentialSmoothing(
             train,
             trend='add',
-            seasonal='mul',
-            seasonal_periods=12
+            seasonal=None
         )
 
         fit = model.fit()
@@ -766,8 +764,7 @@ if uploaded_file is not None:
             train,
             error="add",
             trend="add",
-            seasonal="add",
-            seasonal_periods=12
+            seasonal=None
         )
 
         fit = model.fit()
