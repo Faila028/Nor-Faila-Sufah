@@ -549,52 +549,18 @@ if uploaded_file is not None:
     def tampilkan_hasil(
         nama_metode,
         forecast,
-        test,
         mae,
         rmse
     ):
 
-        col1, col2 = st.columns(2)
-
-        with col1:
-            st.metric(
-                "MAE",
-                f"{mae:.2f}"
-            )
-
-        with col2:
-            st.metric(
-                "RMSE",
-                f"{rmse:.2f}"
-            )
-
-        evaluasi = pd.DataFrame({
-            "Aktual": test.values,
-            "Forecast": np.round(
-                forecast.values,
-                2
-            ),
-            "Error": np.round(
-                test.values - forecast.values,
-                2
-            ),
-            "MAE Bulanan": np.round(
-                np.abs(
-                    test.values - forecast.values
-                ),
-                2
-            )
-        })
-
-        evaluasi.index = test.index
-
-        st.subheader(
-            "📊 Evaluasi Forecast"
+        st.metric(
+            "MAE",
+            f"{mae:.2f}"
         )
 
-        st.dataframe(
-            evaluasi,
-            use_container_width=True
+        st.metric(
+            "RMSE",
+            f"{rmse:.2f}"
         )
 
         forecast_df = pd.DataFrame({
@@ -607,7 +573,7 @@ if uploaded_file is not None:
 
         forecast_df.index = range(
             1,
-            len(forecast_df)+1
+            len(forecast_df) + 1
         )
 
         st.subheader(
@@ -617,7 +583,7 @@ if uploaded_file is not None:
         st.dataframe(
             forecast_df,
             use_container_width=True
-        )    
+        )
 
         fig, ax = plt.subplots(
             figsize=(12,5)
@@ -635,15 +601,11 @@ if uploaded_file is not None:
             forecast.values,
             marker='o',
             linestyle='--',
-            linewidth=2,
             label=nama_metode
         )
 
-        ax.axvline(
-            test.index[0],
-            color='red',
-            linestyle='--',
-            alpha=0.7
+        ax.set_title(
+            f'Forecast {nama_metode}'
         )
 
         ax.legend()
@@ -662,20 +624,17 @@ if uploaded_file is not None:
 
     if metode == "Holt-Winters Additive":
 
-        train = data_produk[:-jumlah_forecast]
-
-        test = data_produk[-jumlah_forecast:]
-
         model = ExponentialSmoothing(
-            train,
+            data_produk,
             trend='add',
-            seasonal=None
+            seasonal='add',
+            seasonal_periods=12
         )
 
         fit = model.fit()
 
         forecast = fit.forecast(
-        jumlah_forecast
+            jumlah_forecast
         )
 
         forecast = forecast.clip(
@@ -683,21 +642,20 @@ if uploaded_file is not None:
         )
 
         mae = mean_absolute_error(
-            test,
-            forecast
+            data_produk,
+            fit.fittedvalues
         )
 
         rmse = np.sqrt(
             mean_squared_error(
-                test,
-                forecast
+                data_produk,
+                fit.fittedvalues
             )
         )
 
         tampilkan_hasil(
             "HW Additive",
             forecast,
-            test,
             mae,
             rmse
         )
@@ -708,16 +666,17 @@ if uploaded_file is not None:
 
     elif metode == "Holt-Winters Multiplicative":
 
-        train = data_produk[:-jumlah_forecast]
+        data_nonzero = data_produk.copy()
 
-        test = data_produk[-jumlah_forecast:]
-
-        train[train <= 0] = 1
+        data_nonzero[
+            data_nonzero <= 0
+        ] = 1
 
         model = ExponentialSmoothing(
-            train,
+            data_nonzero,
             trend='add',
-            seasonal=None
+            seasonal='mul',
+            seasonal_periods=12
         )
 
         fit = model.fit()
@@ -731,21 +690,20 @@ if uploaded_file is not None:
         )
 
         mae = mean_absolute_error(
-            test,
-            forecast
+            data_nonzero,
+            fit.fittedvalues
         )
 
         rmse = np.sqrt(
             mean_squared_error(
-                test,
-                forecast
+                data_nonzero,
+                fit.fittedvalues
             )
         )
 
         tampilkan_hasil(
             "HW Multiplicative",
             forecast,
-            test,
             mae,
             rmse
         )
@@ -756,15 +714,12 @@ if uploaded_file is not None:
 
     elif metode == "ETS":
 
-        train = data_produk[:-jumlah_forecast]
-
-        test = data_produk[-jumlah_forecast:]
-
         model = ETSModel(
-            train,
+            data_produk,
             error="add",
             trend="add",
-            seasonal=None
+            seasonal="add",
+            seasonal_periods=12
         )
 
         fit = model.fit()
@@ -778,21 +733,20 @@ if uploaded_file is not None:
         )
 
         mae = mean_absolute_error(
-            test,
-            forecast
+            data_produk,
+            fit.fittedvalues
         )
 
         rmse = np.sqrt(
             mean_squared_error(
-                test,
-                forecast
+                data_produk,
+                fit.fittedvalues
             )
         )
 
         tampilkan_hasil(
             "ETS",
             forecast,
-            test,
             mae,
             rmse
         )
@@ -803,12 +757,8 @@ if uploaded_file is not None:
 
     elif metode == "ARIMA":
 
-        train = data_produk[:-jumlah_forecast]
-
-        test = data_produk[-jumlah_forecast:]
-
         model = ARIMA(
-            train,
+            data_produk,
             order=(1,1,1)
         )
 
@@ -818,28 +768,28 @@ if uploaded_file is not None:
             steps=jumlah_forecast
         )
 
-        forecast.index = test.index
-
-        forecast = forecast.clip(
-            lower=0
+        fitted = fit.predict(
+            start=1,
+            end=len(data_produk)-1
         )
 
+        actual = data_produk[1:]
+
         mae = mean_absolute_error(
-            test,
-            forecast
+            actual,
+            fitted
         )
 
         rmse = np.sqrt(
             mean_squared_error(
-                test,
-                forecast
+                actual,
+                fitted
             )
         )
 
         tampilkan_hasil(
             "ARIMA",
             forecast,
-            test,
             mae,
             rmse
         )
