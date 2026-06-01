@@ -817,6 +817,10 @@ if uploaded_file is not None:
             jumlah_forecast
         )
 
+        forecast_hw_add = forecast_hw_add.clip(
+            lower=0
+        )
+
         mae_hw_add = mean_absolute_error(
             data_produk,
             fit_hw_add.fittedvalues
@@ -843,6 +847,10 @@ if uploaded_file is not None:
             jumlah_forecast
         )
 
+        forecast_hw_mul = forecast_hw_mul.clip(
+            lower=0
+        )
+
         mae_hw_mul = mean_absolute_error(
             data_nonzero,
             fit_hw_mul.fittedvalues
@@ -862,6 +870,10 @@ if uploaded_file is not None:
 
         forecast_ets = fit_ets.forecast(
             jumlah_forecast
+        )
+
+        forecast_ets = forecast_ets.clip(
+            lower=0
         )
 
         mae_ets = mean_absolute_error(
