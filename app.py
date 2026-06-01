@@ -728,7 +728,7 @@ if uploaded_file is not None:
             jumlah_forecast
         )
 
-         forecast = forecast.clip(
+        forecast = forecast.clip(
             lower=0
         )
 
