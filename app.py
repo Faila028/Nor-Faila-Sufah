@@ -707,50 +707,50 @@ if uploaded_file is not None:
     # HOLT WINTERS MULTIPLICATIVE
     # ==========================================
 
-   elif metode == "Holt-Winters Multiplicative":
+    elif metode == "Holt-Winters Multiplicative":
 
-    train = data_produk[:-jumlah_forecast]
+        train = data_produk[:-jumlah_forecast]
 
-    test = data_produk[-jumlah_forecast:]
+        test = data_produk[-jumlah_forecast:]
 
-    train[train <= 0] = 1
+        train[train <= 0] = 1
 
-    model = ExponentialSmoothing(
-        train,
-        trend='add',
-        seasonal='mul',
-        seasonal_periods=12
-    )
+        model = ExponentialSmoothing(
+            train,
+            trend='add',
+            seasonal='mul',
+            seasonal_periods=12
+        )
 
-    fit = model.fit()
+        fit = model.fit()
 
-    forecast = fit.forecast(
-        jumlah_forecast
-    )
+        forecast = fit.forecast(
+            jumlah_forecast
+        )
 
-    forecast = forecast.clip(
-        lower=0
-    )
+         forecast = forecast.clip(
+            lower=0
+        )
 
-    mae = mean_absolute_error(
-        test,
-        forecast
-    )
-
-    rmse = np.sqrt(
-        mean_squared_error(
+        mae = mean_absolute_error(
             test,
             forecast
         )
-    )
 
-    tampilkan_hasil(
-        "HW Multiplicative",
-        forecast,
-        test,
-        mae,
-        rmse
-    )
+        rmse = np.sqrt(
+            mean_squared_error(
+                test,
+                forecast
+            )
+        )
+
+        tampilkan_hasil(
+            "HW Multiplicative",
+            forecast,
+            test,
+            mae,
+            rmse
+        )
 
     # ==========================================
     # ETS
@@ -758,47 +758,47 @@ if uploaded_file is not None:
 
     elif metode == "ETS":
 
-    train = data_produk[:-jumlah_forecast]
+        train = data_produk[:-jumlah_forecast]
 
-    test = data_produk[-jumlah_forecast:]
+        test = data_produk[-jumlah_forecast:]
 
-    model = ETSModel(
-        train,
-        error="add",
-        trend="add",
-        seasonal="add",
-        seasonal_periods=12
-    )
+        model = ETSModel(
+            train,
+            error="add",
+            trend="add",
+            seasonal="add",
+            seasonal_periods=12
+        )
 
-    fit = model.fit()
+        fit = model.fit()
 
-    forecast = fit.forecast(
-        jumlah_forecast
-    )
+        forecast = fit.forecast(
+            jumlah_forecast
+        )
 
-    forecast = forecast.clip(
-        lower=0
-    )
+        forecast = forecast.clip(
+            lower=0
+        )
 
-    mae = mean_absolute_error(
-        test,
-        forecast
-    )
-
-    rmse = np.sqrt(
-        mean_squared_error(
+        mae = mean_absolute_error(
             test,
             forecast
         )
-    )
 
-    tampilkan_hasil(
-        "ETS",
-        forecast,
-        test,
-        mae,
-        rmse
-    )
+        rmse = np.sqrt(
+            mean_squared_error(
+                test,
+                forecast
+            )
+        )
+
+        tampilkan_hasil(
+            "ETS",
+            forecast,
+            test,
+            mae,
+            rmse
+        )
 
     # ==========================================
     # ARIMA
@@ -806,46 +806,46 @@ if uploaded_file is not None:
 
     elif metode == "ARIMA":
 
-    train = data_produk[:-jumlah_forecast]
+        train = data_produk[:-jumlah_forecast]
 
-    test = data_produk[-jumlah_forecast:]
+        test = data_produk[-jumlah_forecast:]
 
-    model = ARIMA(
-        train,
-        order=(1,1,1)
-    )
+        model = ARIMA(
+            train,
+            order=(1,1,1)
+        )
 
-    fit = model.fit()
+        fit = model.fit()
 
-    forecast = fit.forecast(
-        steps=jumlah_forecast
-    )
+        forecast = fit.forecast(
+            steps=jumlah_forecast
+        )
 
-    forecast.index = test.index
+        forecast.index = test.index
 
-    forecast = forecast.clip(
-        lower=0
-    )
+        forecast = forecast.clip(
+            lower=0
+        )
 
-    mae = mean_absolute_error(
-        test,
-        forecast
-    )
-
-    rmse = np.sqrt(
-        mean_squared_error(
+        mae = mean_absolute_error(
             test,
             forecast
         )
-    )
 
-    tampilkan_hasil(
-        "ARIMA",
-        forecast,
-        test,
-        mae,
-        rmse
-    )
+        rmse = np.sqrt(
+            mean_squared_error(
+                test,
+                forecast
+            )
+        )
+
+        tampilkan_hasil(
+            "ARIMA",
+            forecast,
+            test,
+            mae,
+            rmse
+        )
 
     # ==========================================
     # PERBANDINGAN SEMUA METODE
