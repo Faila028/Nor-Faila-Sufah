@@ -709,24 +709,10 @@ if uploaded_file is not None:
             lower=0
         )
 
-        mae = mean_absolute_error(
-            test,
-            forecast
-        )
-
-        rmse = np.sqrt(
-            mean_squared_error(
-                test,
-                forecast
-            )
-        )
-
         tampilkan_hasil(
             "HW Additive",
             forecast,
             test,
-            mae,
-            rmse
         )
 
     # ==========================================
