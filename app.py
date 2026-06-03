@@ -746,7 +746,7 @@ if uploaded_file is not None:
         if len(train) < 24:
 
             st.warning(
-                "Holt-Winters Multiplicative membutuhkan minimal 24 data training."
+                "Data training kurang dari 24 bulan, metode HW Multiplicative tidak dapat digunakan."
             )
 
             st.stop()
