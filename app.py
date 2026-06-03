@@ -1022,32 +1022,32 @@ if uploaded_file is not None:
         # ETS
         # ==========================================
 
-        model_ets = ETSModel(
+    model_ets = ETSModel(
             train,
             error="add",
             trend="add",
             seasonal=None
         )
 
-        fit_ets = model_ets.fit()
+    fit_ets = model_ets.fit()
 
-        pred_ets = fit_ets.forecast(
+    pred_ets = fit_ets.forecast(
             len(test)
         )
 
-        mae_ets = mean_absolute_error(
+    mae_ets = mean_absolute_error(
             test,
             pred_ets
         )
 
-        rmse_ets = np.sqrt(
+    rmse_ets = np.sqrt(
             mean_squared_error(
                 test,
                 pred_ets
             )
         )
 
-        hasil.append([
+    hasil.append([
             "ETS",
             mae_ets,
             rmse_ets
