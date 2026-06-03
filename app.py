@@ -942,7 +942,7 @@ if uploaded_file is not None:
         # HW ADDITIVE
         # ==========================================
 
-        model_hw_add = ExponentialSmoothing(
+    model_hw_add = ExponentialSmoothing(
             train,
             trend='add',
             seasonal=None
