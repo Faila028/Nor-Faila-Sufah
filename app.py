@@ -743,14 +743,6 @@ if uploaded_file is not None:
 
     elif metode == "Holt-Winters Multiplicative":
 
-        if len(train) < 24:
-
-            st.warning(
-                "Data training kurang dari 24 bulan, metode HW Multiplicative tidak dapat digunakan."
-            )
-
-            st.stop()
-
         if len(train_nonzero) >= 24:
 
             seasonal = "mul"
