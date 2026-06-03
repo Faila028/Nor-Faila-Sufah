@@ -934,7 +934,7 @@ if uploaded_file is not None:
      # PERBANDINGAN SEMUA METODE
      # ==========================================
 
-      else:
+     else:
 
          hasil = []
 
