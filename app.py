@@ -622,7 +622,24 @@ if uploaded_file is not None:
         st.dataframe(
             forecast_df,
             use_container_width=True
-        )    
+        )  
+
+        st.subheader("📅 Forecast Bulan Mendatang")
+
+        future_df = pd.DataFrame({
+        "Periode": forecast.index.strftime("%b-%Y"),
+        "Forecast": np.round(forecast.values, 2)
+        })
+
+        future_df.index = range(
+        1,
+        len(future_df) + 1
+        )
+
+        st.dataframe(
+        future_df,
+        use_container_width=True
+        )
 
         fig, ax = plt.subplots(
             figsize=(12,5)
