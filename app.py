@@ -1143,7 +1143,7 @@ if uploaded_file is not None:
             "MAE"
         )
 
-     ax.grid(
+    ax.grid(
             True,
             linestyle="--",
             alpha=0.5
