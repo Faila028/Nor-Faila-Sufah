@@ -1151,112 +1151,134 @@ if uploaded_file is not None:
 
     st.pyplot(fig)
 
-    # ==========================================
-    # FORECAST MASA DEPAN SEMUA METODE
-    # ==========================================
+        # ==========================================
+        # FORECAST MASING-MASING METODE
+        # ==========================================
 
-    forecast_hw_add = ExponentialSmoothing(
-        data_produk,
-        trend='add',
-        seasonal=None
-    ).fit().forecast(
-        jumlah_forecast
-    )
+        # HW ADDITIVE
 
-    forecast_ets = ETSModel(
-        data_produk,
-        error="add",
-        trend="add",
-        seasonal=None
-    ).fit().forecast(
-        jumlah_forecast
-    )
+    model_hw_add_full = ExponentialSmoothing(
+            data_produk,
+            trend='add',
+            seasonal=None
+        )
 
-    forecast_arima = ARIMA(
-        data_produk,
-        order=(1,1,1)
-    ).fit().forecast(
-        steps=jumlah_forecast
-    )
+    fit_hw_add_full = model_hw_add_full.fit()
 
-    # HW MULTI
+    forecast_hw_add = fit_hw_add_full.forecast(
+            jumlah_forecast
+        )
+
+        # HW MULTIPLICATIVE
 
     full_nonzero = data_produk.copy()
 
     full_nonzero[
-        full_nonzero <= 0
-    ] = 1
+            full_nonzero <= 0
+        ] = 1
 
-    forecast_hw_mul = ExponentialSmoothing(
-        full_nonzero,
-        trend='add',
-        seasonal=None
-    ).fit().forecast(
-        jumlah_forecast
-    )
+    model_hw_mul_full = ExponentialSmoothing(
+            full_nonzero,
+            trend='add',
+            seasonal=None
+        )
 
-    # ==========================================
-    # GRAFIK PERBANDINGAN FORECAST
-    # ==========================================
+    fit_hw_mul_full = model_hw_mul_full.fit()
+
+    forecast_hw_mul = fit_hw_mul_full.forecast(
+            jumlah_forecast
+        )
+
+        # ETS
+
+    model_ets_full = ETSModel(
+            data_produk,
+            error="add",
+            trend="add",
+            seasonal=None
+        )
+
+    fit_ets_full = model_ets_full.fit()
+
+    forecast_ets = fit_ets_full.forecast(
+            jumlah_forecast
+        )
+
+        # ARIMA
+
+    model_arima_full = ARIMA(
+            data_produk,
+            order=(1,1,1)
+        )
+
+    fit_arima_full = model_arima_full.fit()
+
+    forecast_arima = fit_arima_full.forecast(
+            steps=jumlah_forecast
+        )
+
+        # ==========================================
+        # GRAFIK PERBANDINGAN FORECAST
+        # ==========================================
 
     st.subheader(
-        "📈 Grafik Perbandingan Forecast"
-    )
+            "📈 Perbandingan Forecast Semua Metode"
+        )
 
     fig2, ax2 = plt.subplots(
-        figsize=(14,6)
-    )
+            figsize=(14,6)
+        )
 
     ax2.plot(
-        data_produk.index,
-        data_produk.values,
-        marker='o',
-        linewidth=3,
-        label='Data Aktual'
-    )
+            data_produk.index,
+            data_produk.values,
+            marker='o',
+            linewidth=2,
+            label='Data Aktual'
+        )
 
     ax2.plot(
-        forecast_hw_add.index,
-        forecast_hw_add.values,
-        marker='o',
-        linestyle='--',
-        label='HW Additive'
-    )
+            forecast_hw_add.index,
+            forecast_hw_add.values,
+            linestyle='--',
+            marker='o',
+            label='HW Additive'
+        )
 
     ax2.plot(
-        forecast_hw_mul.index,
-        forecast_hw_mul.values,
-        marker='o',
-        linestyle='--',
-        label='HW Multiplicative'
-    )
+            forecast_hw_mul.index,
+            forecast_hw_mul.values,
+            linestyle='--',
+            marker='o',
+            label='HW Multiplicative'
+        )
 
     ax2.plot(
-        forecast_ets.index,
-        forecast_ets.values,
-        marker='o',
-        linestyle='--',
-        label='ETS'
-    )
+            forecast_ets.index,
+            forecast_ets.values,
+            linestyle='--',
+            marker='o',
+            label='ETS'
+        )
 
     ax2.plot(
-        forecast_arima.index,
-        forecast_arima.values,
-        marker='o',
-        linestyle='--',
-        label='ARIMA'
-    )
+            forecast_arima.index,
+            forecast_arima.values,
+            linestyle='--',
+            marker='o',
+            label='ARIMA'
+        )
 
     ax2.set_title(
-        f'Perbandingan Forecast Semua Metode - {produk}'
-    )
+            f'Perbandingan Forecast Produk {produk}'
+        )
 
     ax2.legend()
 
     ax2.grid(
-        True,
-        linestyle='--',
-        alpha=0.5
-    )
+            True,
+            linestyle='--',
+            alpha=0.5
+        )
 
     st.pyplot(fig2)
