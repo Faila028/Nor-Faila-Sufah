@@ -624,23 +624,6 @@ if uploaded_file is not None:
             use_container_width=True
         )  
 
-        st.subheader("📅 Forecast Bulan Mendatang")
-
-        future_df = pd.DataFrame({
-        "Periode": forecast.index.strftime("%b-%Y"),
-        "Forecast": np.round(forecast.values, 2)
-        })
-
-        future_df.index = range(
-        1,
-        len(future_df) + 1
-        )
-
-        st.dataframe(
-        future_df,
-        use_container_width=True
-        )
-
         fig, ax = plt.subplots(
             figsize=(12,5)
         )
@@ -697,8 +680,33 @@ if uploaded_file is not None:
 
         fit = model.fit()
 
-        forecast = fit.forecast(
-        jumlah_forecast
+        forecast_test = fit.forecast(
+            jumlah_forecast
+        )
+
+        forecast_test = forecast_test.clip(
+            lower=0
+        )
+
+        # =====================
+        # Forecast Masa Depan
+        # =====================
+
+        model_full = ExponentialSmoothing(
+            data_produk,
+            trend='add',
+            seasonal='add',
+            seasonal_periods=12
+        )
+
+        fit_full = model_full.fit()
+
+        forecast_future = fit_full.forecast(
+            jumlah_forecast
+        )
+
+        forecast_future = forecast_future.clip(
+            lower=0
         )
 
         forecast = forecast.clip(
