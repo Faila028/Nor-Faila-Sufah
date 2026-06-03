@@ -1152,64 +1152,111 @@ if uploaded_file is not None:
     st.pyplot(fig)
 
     # ==========================================
-    # VISUALISASI GABUNGAN
+    # FORECAST MASA DEPAN SEMUA METODE
     # ==========================================
 
-    fig6, ax6 = plt.subplots(
-            figsize=(14,6)
-        )
+    forecast_hw_add = ExponentialSmoothing(
+        data_produk,
+        trend='add',
+        seasonal=None
+    ).fit().forecast(
+        jumlah_forecast
+    )
 
-    ax6.plot(
-            data_produk.index,
-            data_produk.values,
-            marker='o',
-            linewidth=2,
-            label='Data Aktual'
-        )
+    forecast_ets = ETSModel(
+        data_produk,
+        error="add",
+        trend="add",
+        seasonal=None
+    ).fit().forecast(
+        jumlah_forecast
+    )
 
-    ax6.plot(
+    forecast_arima = ARIMA(
+        data_produk,
+        order=(1,1,1)
+    ).fit().forecast(
+        steps=jumlah_forecast
+    )
+
+    # HW MULTI
+
+    full_nonzero = data_produk.copy()
+
+    full_nonzero[
+        full_nonzero <= 0
+    ] = 1
+
+    forecast_hw_mul = ExponentialSmoothing(
+        full_nonzero,
+        trend='add',
+        seasonal=None
+    ).fit().forecast(
+        jumlah_forecast
+    )
+
+    # ==========================================
+    # GRAFIK PERBANDINGAN FORECAST
+    # ==========================================
+
+    st.subheader(
+        "📈 Grafik Perbandingan Forecast"
+    )
+
+    fig2, ax2 = plt.subplots(
+        figsize=(14,6)
+    )
+
+    ax2.plot(
+        data_produk.index,
+        data_produk.values,
+        marker='o',
+        linewidth=3,
+        label='Data Aktual'
+    )
+
+    ax2.plot(
         forecast_hw_add.index,
         forecast_hw_add.values,
-        linestyle='--',
         marker='o',
+        linestyle='--',
         label='HW Additive'
     )
 
-    ax6.plot(
+    ax2.plot(
         forecast_hw_mul.index,
         forecast_hw_mul.values,
-        linestyle='--',
         marker='o',
+        linestyle='--',
         label='HW Multiplicative'
     )
 
-    ax6.plot(
+    ax2.plot(
         forecast_ets.index,
         forecast_ets.values,
-        linestyle='--',
         marker='o',
+        linestyle='--',
         label='ETS'
     )
 
-    ax6.plot(
+    ax2.plot(
         forecast_arima.index,
         forecast_arima.values,
-        linestyle='--',
         marker='o',
+        linestyle='--',
         label='ARIMA'
-        )
+    )
 
-    ax6.set_title(
-            f'Perbandingan Forecast Produk {produk}'
-        )
+    ax2.set_title(
+        f'Perbandingan Forecast Semua Metode - {produk}'
+    )
 
-    ax6.legend()
+    ax2.legend()
 
-    ax6.grid(
-            True,
-            linestyle='--',
-            alpha=0.5
-        )
+    ax2.grid(
+        True,
+        linestyle='--',
+        alpha=0.5
+    )
 
-    st.pyplot(fig6)
- 
+    st.pyplot(fig2)
