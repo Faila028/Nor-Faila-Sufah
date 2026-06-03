@@ -1168,35 +1168,35 @@ if uploaded_file is not None:
         )
 
     ax6.plot(
-            forecast_hw_add.index,
-            forecast_hw_add.values,
-            linestyle='--',
-            marker='o',
-            label='HW Additive'
-        )
+        forecast_hw_add.index,
+        forecast_hw_add.values,
+        linestyle='--',
+        marker='o',
+        label='HW Additive'
+    )
 
     ax6.plot(
-            forecast_hw_mul.index,
-            forecast_hw_mul.values,
-            linestyle='--',
-            marker='o',
-            label='HW Multiplicative'
-        )
+        forecast_hw_mul.index,
+        forecast_hw_mul.values,
+        linestyle='--',
+        marker='o',
+        label='HW Multiplicative'
+    )
 
     ax6.plot(
-            forecast_ets.index,
-            forecast_ets.values,
-            linestyle='--',
-            marker='o',
-            label='ETS'
-        )
+        forecast_ets.index,
+        forecast_ets.values,
+        linestyle='--',
+        marker='o',
+        label='ETS'
+    )
 
     ax6.plot(
-            forecast_arima.index,
-            forecast_arima.values,
-            linestyle='--',
-            marker='o',
-            label='ARIMA'
+        forecast_arima.index,
+        forecast_arima.values,
+        linestyle='--',
+        marker='o',
+        label='ARIMA'
         )
 
     ax6.set_title(
