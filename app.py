@@ -948,25 +948,25 @@ if uploaded_file is not None:
             seasonal=None
         )
 
-        fit_hw_add = model_hw_add.fit()
+    fit_hw_add = model_hw_add.fit()
 
-        pred_hw_add = fit_hw_add.forecast(
+    pred_hw_add = fit_hw_add.forecast(
             len(test)
         )
 
-        mae_hw_add = mean_absolute_error(
+    mae_hw_add = mean_absolute_error(
             test,
             pred_hw_add
         )
 
-        rmse_hw_add = np.sqrt(
+    rmse_hw_add = np.sqrt(
             mean_squared_error(
                 test,
                 pred_hw_add
             )
         )
 
-        hasil.append([
+    hasil.append([
             "HW Additive",
             mae_hw_add,
             rmse_hw_add
@@ -976,39 +976,39 @@ if uploaded_file is not None:
         # HW MULTIPLICATIVE
         # ==========================================
 
-        train_nonzero = train.copy()
+    train_nonzero = train.copy()
 
-        train_nonzero[
+    train_nonzero[
             train_nonzero <= 0
         ] = 1
 
-        try:
+    try:
 
-            model_hw_mul = ExponentialSmoothing(
+        model_hw_mul = ExponentialSmoothing(
                 train_nonzero,
                 trend='add',
                 seasonal=None
             )
 
-            fit_hw_mul = model_hw_mul.fit()
+        fit_hw_mul = model_hw_mul.fit()
 
-            pred_hw_mul = fit_hw_mul.forecast(
+        pred_hw_mul = fit_hw_mul.forecast(
                 len(test)
             )
 
-            mae_hw_mul = mean_absolute_error(
+        mae_hw_mul = mean_absolute_error(
                 test,
                 pred_hw_mul
             )
 
-            rmse_hw_mul = np.sqrt(
+        rmse_hw_mul = np.sqrt(
                 mean_squared_error(
                     test,
                     pred_hw_mul
                 )
             )
 
-            hasil.append([
+        hasil.append([
                 "HW Multiplicative",
                 mae_hw_mul,
                 rmse_hw_mul
