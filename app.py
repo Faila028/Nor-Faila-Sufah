@@ -751,19 +751,23 @@ if uploaded_file is not None:
 
             st.stop()
 
-        train_nonzero = train.copy()
+        if len(train_nonzero) >= 24:
 
-        train_nonzero[
-            train_nonzero <= 0
-        ] = 1
+            seasonal = "mul"
+            seasonal_periods = 12
+
+        else:
+
+            seasonal = None
+            seasonal_periods = None
 
         model = ExponentialSmoothing(
             train_nonzero,
             trend='add',
-            seasonal='mul',
-            seasonal_periods=12
+            seasonal=seasonal,
+            seasonal_periods=seasonal_periods
         )
-
+        
         fit = model.fit()
 
         pred_test = fit.forecast(
