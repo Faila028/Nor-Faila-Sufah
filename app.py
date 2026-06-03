@@ -742,6 +742,11 @@ if uploaded_file is not None:
     # ==========================================
 
     elif metode == "Holt-Winters Multiplicative":
+        train_nonzero = train.copy()
+
+        train_nonzero[
+          train_nonzero <= 0
+        ] = 1
 
         if len(train_nonzero) >= 24:
 
