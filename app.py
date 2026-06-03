@@ -709,10 +709,6 @@ if uploaded_file is not None:
             lower=0
         )
 
-        forecast = forecast.clip(
-            lower=0
-        )
-
         mae = mean_absolute_error(
             test,
             forecast
