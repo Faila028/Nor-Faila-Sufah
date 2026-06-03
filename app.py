@@ -505,8 +505,8 @@ if uploaded_file is not None:
     jumlah_forecast = st.slider(
         "Jumlah Forecast Bulan",
         1,
-        12,
-        6
+        6,
+        3
     )
 
     if len(data_produk) <= jumlah_forecast + 6:
@@ -685,7 +685,7 @@ if uploaded_file is not None:
     if metode == "Holt-Winters Additive":
 
         seasonal = "add"
-        seasonal_periods = 12
+        seasonal_periods = 6
 
         model = ExponentialSmoothing(
             train,
@@ -749,7 +749,7 @@ if uploaded_file is not None:
             data_nonzero,
             trend='add',
             seasonal='mul',
-            seasonal_periods=12
+            seasonal_periods=6
         )
 
         fit = model.fit()
@@ -780,7 +780,7 @@ if uploaded_file is not None:
             full_nonzero,
             trend='add',
             seasonal='mul',
-            seasonal_periods=12
+            seasonal_periods=6
         )
 
         fit_full = model_full.fit()
@@ -818,7 +818,7 @@ if uploaded_file is not None:
             error="add",
             trend="add",
             seasonal=seasonal,
-            seasonal_periods=12 if seasonal else None
+            seasonal_periods=6 if seasonal else None
         )
 
         fit = model.fit()
@@ -844,7 +844,7 @@ if uploaded_file is not None:
             error="add",
             trend="add",
             seasonal=seasonal,
-            seasonal_periods=12 if seasonal else None
+            seasonal_periods=6 if seasonal else None
         )
 
         fit_full = model_full.fit()
@@ -975,7 +975,7 @@ if uploaded_file is not None:
                 train_nonzero,
                 trend='add',
                 seasonal='mul',
-                seasonal_periods=12
+                seasonal_periods=6
             )
 
             fit_hw_mul = model_hw_mul.fit()
@@ -1015,7 +1015,7 @@ if uploaded_file is not None:
             error="add",
             trend="add",
             seasonal="add",
-            seasonal_periods=12
+            seasonal_periods=6
         )
 
         fit_ets = model_ets.fit()
@@ -1148,7 +1148,7 @@ if uploaded_file is not None:
             data_produk,
             trend='add',
             seasonal='add',
-            seasonal_periods=12
+            seasonal_periods=6
         )
 
         fit_hw_add_full = model_hw_add_full.fit()
@@ -1167,7 +1167,7 @@ if uploaded_file is not None:
            train_nonzero,
             trend='add',
             seasonal='mul',
-            seasonal_periods=12
+            seasonal_periods=6
         )
 
         fit_hw_mul_full = model_hw_mul_full.fit()
@@ -1181,7 +1181,7 @@ if uploaded_file is not None:
             error="add",
             trend="add",
             seasonal="add",
-            seasonal_periods=12
+            seasonal_periods=6
         )
 
         fit_ets_full = model_ets_full.fit()
