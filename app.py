@@ -929,3 +929,224 @@ if uploaded_file is not None:
             mae,
             rmse
         )
+
+     # ==========================================
+     # PERBANDINGAN SEMUA METODE
+     # ==========================================
+
+     else:
+
+         hasil = []
+
+        # ==========================================
+        # HW ADDITIVE
+        # ==========================================
+
+        model_hw_add = ExponentialSmoothing(
+            train,
+            trend='add',
+            seasonal=None
+        )
+
+        fit_hw_add = model_hw_add.fit()
+
+        pred_hw_add = fit_hw_add.forecast(
+            len(test)
+        )
+
+        mae_hw_add = mean_absolute_error(
+            test,
+            pred_hw_add
+        )
+
+        rmse_hw_add = np.sqrt(
+            mean_squared_error(
+                test,
+                pred_hw_add
+            )
+        )
+
+        hasil.append([
+            "HW Additive",
+            mae_hw_add,
+            rmse_hw_add
+        ])
+
+        # ==========================================
+        # HW MULTIPLICATIVE
+        # ==========================================
+
+        train_nonzero = train.copy()
+
+        train_nonzero[
+            train_nonzero <= 0
+        ] = 1
+
+        try:
+
+            model_hw_mul = ExponentialSmoothing(
+                train_nonzero,
+                trend='add',
+                seasonal=None
+            )
+
+            fit_hw_mul = model_hw_mul.fit()
+
+            pred_hw_mul = fit_hw_mul.forecast(
+                len(test)
+            )
+
+            mae_hw_mul = mean_absolute_error(
+                test,
+                pred_hw_mul
+            )
+
+            rmse_hw_mul = np.sqrt(
+                mean_squared_error(
+                    test,
+                    pred_hw_mul
+                )
+            )
+
+            hasil.append([
+                "HW Multiplicative",
+                mae_hw_mul,
+                rmse_hw_mul
+            ])
+
+        except:
+
+            pass
+
+        # ==========================================
+        # ETS
+        # ==========================================
+
+        model_ets = ETSModel(
+            train,
+            error="add",
+            trend="add",
+            seasonal=None
+        )
+
+        fit_ets = model_ets.fit()
+
+        pred_ets = fit_ets.forecast(
+            len(test)
+        )
+
+        mae_ets = mean_absolute_error(
+            test,
+            pred_ets
+        )
+
+        rmse_ets = np.sqrt(
+            mean_squared_error(
+                test,
+                pred_ets
+            )
+        )
+
+        hasil.append([
+            "ETS",
+            mae_ets,
+            rmse_ets
+        ])
+
+        # ==========================================
+        # ARIMA
+        # ==========================================
+
+        model_arima = ARIMA(
+            train,
+            order=(1,1,1)
+        )
+
+        fit_arima = model_arima.fit()
+
+        pred_arima = fit_arima.forecast(
+            len(test)
+        )
+
+        mae_arima = mean_absolute_error(
+            test,
+            pred_arima
+        )
+
+        rmse_arima = np.sqrt(
+            mean_squared_error(
+                test,
+                pred_arima
+            )
+        )
+
+        hasil.append([
+            "ARIMA",
+            mae_arima,
+            rmse_arima
+        ])
+
+        # ==========================================
+        # TABEL PERBANDINGAN
+        # ==========================================
+
+        perbandingan = pd.DataFrame(
+            hasil,
+            columns=[
+                "Metode",
+                "MAE",
+                "RMSE"
+            ]
+        )
+
+        perbandingan = perbandingan.sort_values(
+            by="MAE"
+        )
+
+        perbandingan.index = range(
+            1,
+            len(perbandingan)+1
+        )
+
+        st.subheader(
+            "📊 Perbandingan Semua Metode"
+        )
+
+        st.dataframe(
+            perbandingan,
+            use_container_width=True
+        )
+
+        metode_terbaik = perbandingan.iloc[0]
+
+        st.success(
+            f"Metode terbaik adalah "
+            f"{metode_terbaik['Metode']} "
+            f"dengan MAE "
+            f"{metode_terbaik['MAE']:.2f}"
+        )
+
+        fig, ax = plt.subplots(
+            figsize=(10,5)
+        )
+
+        ax.bar(
+            perbandingan["Metode"],
+            perbandingan["MAE"]
+        )
+
+        ax.set_title(
+            "Perbandingan Nilai MAE"
+        )
+
+        ax.set_ylabel(
+            "MAE"
+        )
+
+        ax.grid(
+            True,
+            linestyle="--",
+            alpha=0.5
+        )
+
+        st.pyplot(fig)
