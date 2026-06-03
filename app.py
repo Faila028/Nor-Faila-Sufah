@@ -1057,30 +1057,30 @@ if uploaded_file is not None:
         # ARIMA
         # ==========================================
 
-        model_arima = ARIMA(
+    model_arima = ARIMA(
             train,
             order=(1,1,1)
         )
 
-        fit_arima = model_arima.fit()
+    fit_arima = model_arima.fit()
 
-        pred_arima = fit_arima.forecast(
+    pred_arima = fit_arima.forecast(
             len(test)
         )
 
-        mae_arima = mean_absolute_error(
+    mae_arima = mean_absolute_error(
             test,
             pred_arima
         )
 
-        rmse_arima = np.sqrt(
+    rmse_arima = np.sqrt(
             mean_squared_error(
                 test,
                 pred_arima
             )
         )
 
-        hasil.append([
+    hasil.append([
             "ARIMA",
             mae_arima,
             rmse_arima
@@ -1090,7 +1090,7 @@ if uploaded_file is not None:
         # TABEL PERBANDINGAN
         # ==========================================
 
-        perbandingan = pd.DataFrame(
+    perbandingan = pd.DataFrame(
             hasil,
             columns=[
                 "Metode",
@@ -1099,54 +1099,54 @@ if uploaded_file is not None:
             ]
         )
 
-        perbandingan = perbandingan.sort_values(
+    perbandingan = perbandingan.sort_values(
             by="MAE"
         )
 
-        perbandingan.index = range(
+    perbandingan.index = range(
             1,
             len(perbandingan)+1
         )
 
-        st.subheader(
+    st.subheader(
             "📊 Perbandingan Semua Metode"
         )
 
-        st.dataframe(
+    st.dataframe(
             perbandingan,
             use_container_width=True
         )
 
-        metode_terbaik = perbandingan.iloc[0]
+    metode_terbaik = perbandingan.iloc[0]
 
-        st.success(
+    st.success(
             f"Metode terbaik adalah "
             f"{metode_terbaik['Metode']} "
             f"dengan MAE "
             f"{metode_terbaik['MAE']:.2f}"
         )
 
-        fig, ax = plt.subplots(
+    fig, ax = plt.subplots(
             figsize=(10,5)
         )
 
-        ax.bar(
+    ax.bar(
             perbandingan["Metode"],
             perbandingan["MAE"]
         )
 
-        ax.set_title(
+    ax.set_title(
             "Perbandingan Nilai MAE"
         )
 
-        ax.set_ylabel(
+    ax.set_ylabel(
             "MAE"
         )
 
-        ax.grid(
+     ax.grid(
             True,
             linestyle="--",
             alpha=0.5
         )
 
-        st.pyplot(fig)
+    st.pyplot(fig)
