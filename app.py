@@ -742,29 +742,20 @@ if uploaded_file is not None:
     # ==========================================
 
     elif metode == "Holt-Winters Multiplicative":
-        train_nonzero = train.copy()
 
-        train_nonzero[
-          train_nonzero <= 0
+        data_nonzero = train.copy()
+
+        data_nonzero[
+            data_nonzero <= 0
         ] = 1
 
-        if len(train_nonzero) >= 24:
-
-            seasonal = "mul"
-            seasonal_periods = 12
-
-        else:
-
-            seasonal = None
-            seasonal_periods = None
-
         model = ExponentialSmoothing(
-            train_nonzero,
+            data_nonzero,
             trend='add',
-            seasonal=seasonal,
-            seasonal_periods=seasonal_periods
+            seasonal='mul',
+            seasonal_periods=12
         )
-        
+
         fit = model.fit()
 
         pred_test = fit.forecast(
