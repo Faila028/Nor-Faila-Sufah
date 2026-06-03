@@ -743,13 +743,13 @@ if uploaded_file is not None:
 
     elif metode == "Holt-Winters Multiplicative":
 
-    if len(train) < 24:
+        if len(train) < 24:
 
-        st.warning(
-            "Holt-Winters Multiplicative membutuhkan minimal 24 data training."
-        )
+            st.warning(
+                "Holt-Winters Multiplicative membutuhkan minimal 24 data training."
+            )
 
-        st.stop()
+            st.stop()
 
         train_nonzero = train.copy()
 
