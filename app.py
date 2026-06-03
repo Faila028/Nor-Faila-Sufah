@@ -178,9 +178,14 @@ if uploaded_file is not None:
         'Jan-23','Feb-23','Mar-23','Apr-23',
         'May-23','Jun-23','Jul-23','Aug-23',
         'Sep-23','Oct-23','Nov-23','Dec-23',
+
         'Jan-24','Feb-24','Mar-24','Apr-24',
         'May-24','Jun-24','Jul-24','Aug-24',
-        'Sep-24','Oct-24','Nov-24','Dec-24'
+        'Sep-24','Oct-24','Nov-24','Dec-24',
+
+        'Jan-25','Feb-25','Mar-25','Apr-25',
+        'May-25','Jun-25','Jul-25','Aug-25',
+        'Sep-25','Oct-25','Nov-25','Dec-25'
     ]
 
     pivot_table = pivot_table.reindex(
@@ -679,17 +684,8 @@ if uploaded_file is not None:
 
     if metode == "Holt-Winters Additive":
 
-        seasonal = (
-            "add"
-            if len(train) >= 24
-            else None
-        )
-
-        seasonal_periods = (
-            12
-            if seasonal is not None
-            else None
-        )
+        seasonal = "add"
+        seasonal_periods = 12
 
         model = ExponentialSmoothing(
             train,
@@ -978,7 +974,8 @@ if uploaded_file is not None:
             model_hw_mul = ExponentialSmoothing(
                 train_nonzero,
                 trend='add',
-                seasonal=None
+                seasonal='mul',
+                seasonal_periods=12
             )
 
             fit_hw_mul = model_hw_mul.fit()
@@ -1017,7 +1014,8 @@ if uploaded_file is not None:
             train,
             error="add",
             trend="add",
-            seasonal=None
+            seasonal="add",
+            seasonal_periods=12
         )
 
         fit_ets = model_ets.fit()
@@ -1149,7 +1147,8 @@ if uploaded_file is not None:
         model_hw_add_full = ExponentialSmoothing(
             data_produk,
             trend='add',
-            seasonal=None
+            seasonal='add',
+            seasonal_periods=12
         )
 
         fit_hw_add_full = model_hw_add_full.fit()
@@ -1164,10 +1163,11 @@ if uploaded_file is not None:
             full_nonzero <= 0
         ] = 1
 
-        model_hw_mul_full = ExponentialSmoothing(
-            full_nonzero,
+        model_hw_mul = ExponentialSmoothing(
+           train_nonzero,
             trend='add',
-            seasonal=None
+            seasonal='mul',
+            seasonal_periods=12
         )
 
         fit_hw_mul_full = model_hw_mul_full.fit()
@@ -1180,7 +1180,8 @@ if uploaded_file is not None:
             data_produk,
             error="add",
             trend="add",
-            seasonal=None
+            seasonal="add",
+            seasonal_periods=12
         )
 
         fit_ets_full = model_ets_full.fit()
