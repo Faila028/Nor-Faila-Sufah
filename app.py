@@ -1151,64 +1151,15 @@ if uploaded_file is not None:
 
     st.pyplot(fig)
 
+    # ==========================================
+    # VISUALISASI GABUNGAN
+    # ==========================================
 
-        # ==========================================
-        # FORECAST MASA DEPAN SEMUA METODE
-        # ==========================================
-
-    forecast_hw_add = ExponentialSmoothing(
-            data_produk,
-            trend='add',
-            seasonal=None
-        ).fit().forecast(
-            jumlah_forecast
-        )
-
-    try:
-
-        full_nonzero = data_produk.copy()
-
-        full_nonzero[
-                full_nonzero <= 0
-            ] = 1
-
-        forecast_hw_mul = ExponentialSmoothing(
-                full_nonzero,
-                trend='add',
-                seasonal=None
-            ).fit().forecast(
-                jumlah_forecast
-            )
-
-    except:
-
-        forecast_hw_mul = None
-
-        forecast_ets = ETSModel(
-            data_produk,
-            error="add",
-            trend="add",
-            seasonal=None
-        ).fit().forecast(
-            jumlah_forecast
-        )
-
-        forecast_arima = ARIMA(
-            data_produk,
-            order=(1,1,1)
-        ).fit().forecast(
-            steps=jumlah_forecast
-        )
-
-        # ==========================================
-        # GRAFIK PERBANDINGAN FORECAST
-        # ==========================================
-
-        fig2, ax2 = plt.subplots(
+    fig6, ax6 = plt.subplots(
             figsize=(14,6)
         )
 
-        ax2.plot(
+    ax6.plot(
             data_produk.index,
             data_produk.values,
             marker='o',
@@ -1216,50 +1167,49 @@ if uploaded_file is not None:
             label='Data Aktual'
         )
 
-        ax2.plot(
+    ax6.plot(
             forecast_hw_add.index,
             forecast_hw_add.values,
-            marker='o',
             linestyle='--',
+            marker='o',
             label='HW Additive'
         )
 
-        if forecast_hw_mul is not None:
+    ax6.plot(
+            forecast_hw_mul.index,
+            forecast_hw_mul.values,
+            linestyle='--',
+            marker='o',
+            label='HW Multiplicative'
+        )
 
-            ax2.plot(
-                forecast_hw_mul.index,
-                forecast_hw_mul.values,
-                marker='o',
-                linestyle='--',
-                label='HW Multiplicative'
-            )
-
-        ax2.plot(
+    ax6.plot(
             forecast_ets.index,
             forecast_ets.values,
-            marker='o',
             linestyle='--',
+            marker='o',
             label='ETS'
         )
 
-        ax2.plot(
+    ax6.plot(
             forecast_arima.index,
             forecast_arima.values,
-            marker='o',
             linestyle='--',
+            marker='o',
             label='ARIMA'
         )
 
-        ax2.set_title(
-            f'Perbandingan Forecast Semua Metode - {produk}'
+    ax6.set_title(
+            f'Perbandingan Forecast Produk {produk}'
         )
 
-        ax2.legend()
+    ax6.legend()
 
-        ax2.grid(
+    ax6.grid(
             True,
             linestyle='--',
             alpha=0.5
         )
 
-        st.pyplot(fig2)
+    st.pyplot(fig6)
+ 
