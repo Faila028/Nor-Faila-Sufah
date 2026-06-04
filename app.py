@@ -57,11 +57,21 @@ h2, h3 { color: #1f4e79; }
 st.title("📦 Clustering dan Forecasting Permintaan Barang")
 
 st.markdown("""
-### Sistem Analisis Barang Keluar
-Aplikasi ini digunakan untuk:
-- Clustering produk menggunakan K-Means
-- Forecasting permintaan barang
-- Perbandingan beberapa metode forecasting
+### Sistem Analisis Barang Keluar — PT. Menara Kudus Indonesia
+
+Aplikasi ini dirancang untuk membantu tim gudang dan manajemen dalam menganalisis 
+pola permintaan barang secara data-driven, sehingga pengadaan barang dapat 
+dilakukan lebih efisien dan tepat sasaran.
+
+**Fitur utama:**
+- 🔵 **Clustering K-Means** — Mengelompokkan produk menjadi Fast, Medium, dan Slow Moving
+- 📈 **Forecasting** — Meramalkan permintaan menggunakan Holt-Winters, ETS, dan ARIMA
+- 📊 **Perbandingan Metode** — Memilih metode terbaik berdasarkan nilai MAE & RMSE
+
+**Cara penggunaan:**
+1. Upload file Excel data barang keluar
+2. Tentukan jumlah cluster dan pilih produk
+3. Pilih metode forecasting dan jumlah bulan ramalan
 """)
 
 # ==========================================
