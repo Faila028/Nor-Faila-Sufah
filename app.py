@@ -434,7 +434,7 @@ with tab3:
                    linewidth=2, marker='o', markersize=4, label='Data Train')
         ax_ev.plot(test.index, test.values, color=WARNA['test'],
                    linewidth=2.5, marker='o', markersize=7, label='Data Test (Aktual)')
-      for nm, v in hasil_eval.items():
+        for nm, v in hasil_eval.items():
          if nm == nama_terbaik:
               # Metode terbaik — tebal, solid, penuh warna
               ax_ev.plot(
