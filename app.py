@@ -127,8 +127,8 @@ with tab1:
     st.dataframe(df.head(), use_container_width=True)
 
     c1, c2, c3 = st.columns(3)
-    with c1: st.metric("Jumlah Data",        len(df))
-    with c2: st.metric("Jumlah Produk",      df['id_produk'].nunique())
+    with c1: st.metric("Jumlah Data",         len(df))
+    with c2: st.metric("Jumlah Produk",       df['id_produk'].nunique())
     with c3: st.metric("Total Barang Keluar", int(df['keluar'].sum()))
 
     st.subheader("📊 Pivot Table Barang Keluar per Bulan")
@@ -140,7 +140,7 @@ with tab1:
                        'pivot_barang_keluar.csv', 'text/csv')
 
 # ==========================================
-# PERSIAPAN CLUSTERING (dipakai Tab 2 & 3)
+# PERSIAPAN CLUSTERING
 # ==========================================
 
 pivot_table['Total'] = pivot_table.sum(axis=1)
@@ -156,7 +156,6 @@ with tab2:
 
     st.subheader("📌 Clustering Produk dengan K-Means")
 
-    # Elbow method
     inertia = []
     for k in range(1, 10):
         km = KMeans(n_clusters=k, random_state=42)
@@ -186,9 +185,8 @@ with tab2:
 
     cluster_avg = filtered_data.groupby('Cluster')['Total'].mean().sort_values(ascending=False)
     mapping_cluster = {}
-    labels_tersedia = ['Fast Moving', 'Medium Moving', 'Slow Moving']
     for i, idx in enumerate(cluster_avg.index[:3]):
-        mapping_cluster[idx] = labels_tersedia[i]
+        mapping_cluster[idx] = ['Fast Moving', 'Medium Moving', 'Slow Moving'][i]
 
     filtered_data['Kategori'] = filtered_data['Cluster'].map(mapping_cluster)
 
@@ -202,11 +200,9 @@ with tab2:
     tabel_cluster.index = range(1, len(tabel_cluster) + 1)
 
     col_tbl, col_chart = st.columns([1, 1.5])
-
     with col_tbl:
         st.subheader("Jumlah Produk per Cluster")
         st.dataframe(tabel_cluster, use_container_width=True)
-
     with col_chart:
         warna_cl = ['#2c7bb6', '#f4a261', '#d9534f']
         fig_cl, ax_cl = plt.subplots(figsize=(6, 3.2))
@@ -226,7 +222,6 @@ with tab2:
         st.pyplot(fig_cl)
         plt.close(fig_cl)
 
-    # Daftar produk per cluster
     st.subheader("Daftar Produk per Cluster")
     pilih_lihat = st.selectbox("Tampilkan produk dalam cluster:",
                                ['Fast Moving', 'Medium Moving', 'Slow Moving'],
@@ -236,8 +231,7 @@ with tab2:
     df_lihat.index = range(1, len(df_lihat) + 1)
     st.dataframe(df_lihat, use_container_width=True)
 
-    # Simpan ke session state agar Tab 3 bisa pakai
-    st.session_state['filtered_data']  = filtered_data
+    st.session_state['filtered_data']   = filtered_data
     st.session_state['clustering_done'] = True
 
 # ==========================================
@@ -254,13 +248,10 @@ with tab3:
 
     st.subheader("📈 Forecasting Permintaan Barang")
 
-    # --- Pilihan ---
     col_a, col_b = st.columns(2)
-
     with col_a:
-        pilih_cluster = st.selectbox(
-            "Pilih Cluster", ['Fast Moving', 'Medium Moving', 'Slow Moving']
-        )
+        pilih_cluster  = st.selectbox("Pilih Cluster",
+                                      ['Fast Moving', 'Medium Moving', 'Slow Moving'])
         produk_cluster = filtered_data[
             filtered_data['Kategori'] == pilih_cluster
         ].index.tolist()
@@ -269,12 +260,20 @@ with tab3:
     with col_b:
         metode = st.selectbox(
             "Pilih Metode Forecasting",
-            ["Holt-Winters Additive", "Holt-Winters Multiplicative",
-             "ETS", "ARIMA", "Perbandingan Semua Metode"]
+            [
+                "🤖 Otomatis (Rekomendasi Sistem)",
+                "Holt-Winters Additive",
+                "Holt-Winters Multiplicative",
+                "ETS",
+                "ARIMA",
+            ]
         )
         jumlah_forecast = st.slider("Jumlah Bulan yang Diramalkan", 1, 12, 6)
 
-    # Tombol jalankan
+    if metode == "🤖 Otomatis (Rekomendasi Sistem)":
+        st.info("💡 Sistem akan menjalankan semua metode, membandingkan akurasinya, "
+                "lalu otomatis menggunakan metode terbaik untuk forecast ke depan.")
+    
     st.markdown("---")
     run = st.button("🚀 Jalankan Forecast", use_container_width=True)
 
@@ -292,7 +291,6 @@ with tab3:
     if (data_produk > 0).sum() < 6:
         st.warning("⚠️ Produk ini aktif kurang dari 6 bulan — hasil forecast kurang reliabel.")
 
-    # Train-test split
     n     = len(data_produk)
     train = data_produk.iloc[:n - jumlah_forecast]
     test  = data_produk.iloc[n - jumlah_forecast:]
@@ -307,7 +305,8 @@ with tab3:
     # Grafik data aktual
     fig_akt, ax_akt = plt.subplots(figsize=(12, 4))
     ax_akt.plot(data_produk.index, data_produk.values,
-                color=WARNA['aktual'], linewidth=2, marker='o', markersize=5, label='Data Aktual')
+                color=WARNA['aktual'], linewidth=2, marker='o', markersize=5,
+                label='Data Aktual')
     ax_akt.axvspan(test.index[0], test.index[-1], alpha=0.08, color='orange',
                    label=f'Periode Test ({len(test)} bln)')
     ax_akt.axvline(x=test.index[0], color=WARNA['vline'], linestyle='--', linewidth=1.2)
@@ -322,174 +321,51 @@ with tab3:
     # HELPER
     # ==========================================
 
-    def retrain_full(nama, full_data, n_fc):
-        if nama == 'HW Additive':
-            return ExponentialSmoothing(full_data, trend='add', seasonal='add',
-                                        seasonal_periods=12).fit().forecast(n_fc).clip(lower=0)
-        elif nama == 'HW Multiplicative':
-            fd = full_data.copy(); fd[fd <= 0] = 1
-            return ExponentialSmoothing(fd, trend='add', seasonal='mul',
-                                        seasonal_periods=12).fit().forecast(n_fc).clip(lower=0)
-        elif nama == 'ETS':
-            return ETSModel(full_data, error="add", trend="add", seasonal="add",
-                            seasonal_periods=12).fit(disp=False).forecast(n_fc).clip(lower=0)
-        elif nama == 'ARIMA':
-            return ARIMA(full_data, order=(1, 1, 1)).fit().forecast(steps=n_fc)
-
-    def tampilkan_satu_metode(nama, fc_eval, test_actual):
-        mae  = mean_absolute_error(test_actual.values, fc_eval.values)
-        rmse = np.sqrt(mean_squared_error(test_actual.values, fc_eval.values))
-
-        c1, c2 = st.columns(2)
-        with c1: st.metric("MAE",  f"{mae:.2f}")
-        with c2: st.metric("RMSE", f"{rmse:.2f}")
-
-        # Tabel evaluasi
-        eval_df = pd.DataFrame({
-            'Periode':             fc_eval.index.strftime('%b-%Y'),
-            'Forecast (Evaluasi)': np.round(fc_eval.values, 2),
-            'Data Aktual (Test)':  np.round(test_actual.values, 2),
-        })
-        eval_df.index = range(1, len(eval_df) + 1)
-        st.subheader("📋 Perbandingan Forecast vs Aktual (Periode Evaluasi)")
-        st.dataframe(eval_df, use_container_width=True)
-
-        # Grafik evaluasi
-        fig_e, ax_e = plt.subplots(figsize=(12, 4))
-        ax_e.plot(train.index, train.values, color=WARNA['train'],
-                  linewidth=2, marker='o', markersize=4, label='Data Train')
-        ax_e.plot(test_actual.index, test_actual.values, color=WARNA['test'],
-                  linewidth=2.5, marker='o', markersize=7, label='Data Test (Aktual)')
-        ax_e.plot(fc_eval.index, fc_eval.values,
-                  color=WARNA.get(nama, 'green'), linewidth=2,
-                  marker='s', markersize=6, linestyle='--', label=f'Forecast {nama}')
-        ax_e.axvline(x=test_actual.index[0], color=WARNA['vline'],
-                     linestyle='--', linewidth=1.2, label='Awal Test')
-        ax_e.axvspan(test_actual.index[0], test_actual.index[-1], alpha=0.06, color='orange')
-        style_ax(ax_e, title=f'Evaluasi Model {nama} — Produk {produk}',
-                 ylabel='Jumlah Keluar')
-        ax_e.legend()
-        plt.tight_layout()
-        st.pyplot(fig_e)
-        plt.close(fig_e)
-
-        # Forecast ke depan
-        st.subheader("🔮 Forecast ke Depan")
-        st.caption(f"Model di-retrain menggunakan seluruh {len(data_produk)} bulan data, "
-                   "lalu meramalkan bulan-bulan berikutnya.")
-
-        fc_future = retrain_full(nama, data_produk, jumlah_forecast)
-        fut_df = pd.DataFrame({
-            'Periode':        fc_future.index.strftime('%b-%Y'),
-            'Hasil Forecast': np.round(fc_future.values, 2),
-        })
-        fut_df.index = range(1, len(fut_df) + 1)
-        st.dataframe(fut_df, use_container_width=True)
-
-        csv_f = fut_df.to_csv().encode('utf-8')
-        st.download_button("⬇️ Download Forecast ke Depan", csv_f,
-                           f'forecast_{produk}_{nama}.csv', 'text/csv')
-
-        fig_f, ax_f = plt.subplots(figsize=(12, 4))
-        ax_f.plot(data_produk.index, data_produk.values, color=WARNA['aktual'],
-                  linewidth=2, marker='o', markersize=4,
-                  label=f'Data Aktual ({len(data_produk)} bln)')
-        ax_f.plot(fc_future.index, fc_future.values,
-                  color=WARNA.get(nama, 'green'), linewidth=2.5,
-                  marker='s', markersize=7, linestyle='--',
-                  label=f'Forecast ke Depan ({nama})')
-        ax_f.axvline(x=fc_future.index[0], color='red', linestyle='--',
-                     linewidth=1.2, alpha=0.7, label='Awal Forecast')
-        ax_f.axvspan(fc_future.index[0], fc_future.index[-1], alpha=0.07, color='green')
-        style_ax(ax_f, title=f'Forecast ke Depan — {nama} — Produk {produk}',
-                 ylabel='Jumlah Keluar')
-        ax_f.legend()
-        plt.tight_layout()
-        st.pyplot(fig_f)
-        plt.close(fig_f)
-
-        return mae, rmse, fc_future
-
-    # ==========================================
-    # METODE TUNGGAL
-    # ==========================================
-
-    if metode != "Perbandingan Semua Metode":
-
-        nama_map = {
-            "Holt-Winters Additive":       "HW Additive",
-            "Holt-Winters Multiplicative": "HW Multiplicative",
-            "ETS":   "ETS",
-            "ARIMA": "ARIMA",
-        }
-        nama = nama_map[metode]
-
-        if nama == "HW Additive":
-            fc = ExponentialSmoothing(train, trend='add', seasonal='add',
-                                      seasonal_periods=12).fit().forecast(jumlah_forecast).clip(lower=0)
-        elif nama == "HW Multiplicative":
-            tr_nz = train.copy(); tr_nz[tr_nz <= 0] = 1
-            fc = ExponentialSmoothing(tr_nz, trend='add', seasonal='mul',
-                                      seasonal_periods=12).fit().forecast(jumlah_forecast).clip(lower=0)
-        elif nama == "ETS":
-            fc = ETSModel(train, error="add", trend="add", seasonal="add",
-                          seasonal_periods=12).fit(disp=False).forecast(jumlah_forecast).clip(lower=0)
-        elif nama == "ARIMA":
-            fc = ARIMA(train, order=(1, 1, 1)).fit().forecast(steps=jumlah_forecast)
-
-        mae, rmse, fc_future = tampilkan_satu_metode(nama, fc, test)
-
-        # Ringkasan
-        st.markdown("---")
-        st.subheader("📝 Ringkasan Hasil")
-        st.success(
-            f"**Produk:** {produk}  |  "
-            f"**Cluster:** {pilih_cluster}  |  "
-            f"**Metode:** {nama}  |  "
-            f"**MAE:** {mae:.2f}  |  "
-            f"**RMSE:** {rmse:.2f}  |  "
-            f"**Forecast bulan pertama:** {int(round(fc_future.values[0]))} unit"
-        )
-
-    # ==========================================
-    # PERBANDINGAN SEMUA METODE
-    # ==========================================
-
-    else:
-
+    def jalankan_semua_metode(train, test, data_produk, jumlah_forecast):
+        """Jalankan 4 metode, kembalikan hasil evaluasi & forecast ke depan."""
         hasil_eval   = {}
         hasil_future = {}
 
         # HW Additive
-        fc_hwa = ExponentialSmoothing(train, trend='add', seasonal='add',
-                                      seasonal_periods=12).fit().forecast(jumlah_forecast).clip(lower=0)
+        fc_hwa = ExponentialSmoothing(
+            train, trend='add', seasonal='add', seasonal_periods=12
+        ).fit().forecast(jumlah_forecast).clip(lower=0)
         hasil_eval['HW Additive'] = {
             'forecast': fc_hwa,
             'mae':  mean_absolute_error(test.values, fc_hwa.values),
             'rmse': np.sqrt(mean_squared_error(test.values, fc_hwa.values)),
         }
-        hasil_future['HW Additive'] = retrain_full('HW Additive', data_produk, jumlah_forecast)
+        hasil_future['HW Additive'] = ExponentialSmoothing(
+            data_produk, trend='add', seasonal='add', seasonal_periods=12
+        ).fit().forecast(jumlah_forecast).clip(lower=0)
 
         # HW Multiplicative
         tr_nz = train.copy(); tr_nz[tr_nz <= 0] = 1
-        fc_hwm = ExponentialSmoothing(tr_nz, trend='add', seasonal='mul',
-                                      seasonal_periods=12).fit().forecast(jumlah_forecast).clip(lower=0)
+        fc_hwm = ExponentialSmoothing(
+            tr_nz, trend='add', seasonal='mul', seasonal_periods=12
+        ).fit().forecast(jumlah_forecast).clip(lower=0)
         hasil_eval['HW Multiplicative'] = {
             'forecast': fc_hwm,
             'mae':  mean_absolute_error(test.values, fc_hwm.values),
             'rmse': np.sqrt(mean_squared_error(test.values, fc_hwm.values)),
         }
-        hasil_future['HW Multiplicative'] = retrain_full('HW Multiplicative', data_produk, jumlah_forecast)
+        fd_nz = data_produk.copy(); fd_nz[fd_nz <= 0] = 1
+        hasil_future['HW Multiplicative'] = ExponentialSmoothing(
+            fd_nz, trend='add', seasonal='mul', seasonal_periods=12
+        ).fit().forecast(jumlah_forecast).clip(lower=0)
 
         # ETS
-        fc_ets = ETSModel(train, error="add", trend="add", seasonal="add",
-                          seasonal_periods=12).fit(disp=False).forecast(jumlah_forecast).clip(lower=0)
+        fc_ets = ETSModel(
+            train, error="add", trend="add", seasonal="add", seasonal_periods=12
+        ).fit(disp=False).forecast(jumlah_forecast).clip(lower=0)
         hasil_eval['ETS'] = {
             'forecast': fc_ets,
             'mae':  mean_absolute_error(test.values, fc_ets.values),
             'rmse': np.sqrt(mean_squared_error(test.values, fc_ets.values)),
         }
-        hasil_future['ETS'] = retrain_full('ETS', data_produk, jumlah_forecast)
+        hasil_future['ETS'] = ETSModel(
+            data_produk, error="add", trend="add", seasonal="add", seasonal_periods=12
+        ).fit(disp=False).forecast(jumlah_forecast).clip(lower=0)
 
         # ARIMA
         fc_arima = ARIMA(train, order=(1, 1, 1)).fit().forecast(steps=jumlah_forecast)
@@ -498,24 +374,27 @@ with tab3:
             'mae':  mean_absolute_error(test.values, fc_arima.values),
             'rmse': np.sqrt(mean_squared_error(test.values, fc_arima.values)),
         }
-        hasil_future['ARIMA'] = retrain_full('ARIMA', data_produk, jumlah_forecast)
+        hasil_future['ARIMA'] = ARIMA(
+            data_produk, order=(1, 1, 1)
+        ).fit().forecast(steps=jumlah_forecast)
 
-        # Tabel perbandingan
+        return hasil_eval, hasil_future
+
+    def tampilkan_perbandingan(hasil_eval, hasil_future, nama_terbaik):
+        """Tampilkan tabel & grafik perbandingan semua metode."""
+
         perbandingan = pd.DataFrame([
             {'Metode': m, 'MAE': round(v['mae'], 2), 'RMSE': round(v['rmse'], 2)}
             for m, v in hasil_eval.items()
         ])
         perbandingan.index = range(1, len(perbandingan) + 1)
 
-        best_idx       = perbandingan['MAE'].idxmin()
-        metode_terbaik = perbandingan.loc[best_idx]
-
         st.subheader("📊 Perbandingan Akurasi Semua Metode")
+        st.caption("Baris hijau = metode dengan MAE terkecil (terbaik).")
 
-        # Highlight baris terbaik
         def highlight_best(row):
             return ['background-color: #d4edda; font-weight: bold'
-                    if row['Metode'] == metode_terbaik['Metode'] else '' for _ in row]
+                    if row['Metode'] == nama_terbaik else '' for _ in row]
 
         st.dataframe(
             perbandingan.style.apply(highlight_best, axis=1),
@@ -523,9 +402,10 @@ with tab3:
         )
 
         # Grafik MAE & RMSE berdampingan
-        fig_cmp, (ax_mae, ax_rmse) = plt.subplots(1, 2, figsize=(13, 4))
         metode_list = perbandingan['Metode'].tolist()
         warna_list  = [WARNA[m] for m in metode_list]
+
+        fig_cmp, (ax_mae, ax_rmse) = plt.subplots(1, 2, figsize=(13, 4))
 
         b1 = ax_mae.bar(metode_list, perbandingan['MAE'],
                         color=warna_list, edgecolor='white', width=0.5)
@@ -539,20 +419,15 @@ with tab3:
         style_ax(ax_rmse, title='Perbandingan RMSE', ylabel='RMSE')
         ax_rmse.set_ylim(0, perbandingan['RMSE'].max() * 1.3)
 
-        plt.suptitle('Evaluasi Akurasi Semua Metode', fontsize=13, fontweight='bold', y=1.02)
+        plt.suptitle('Evaluasi Akurasi Semua Metode', fontsize=13,
+                     fontweight='bold', y=1.02)
         plt.tight_layout()
         st.pyplot(fig_cmp)
         plt.close(fig_cmp)
 
-        st.success(
-            f"✅ Metode terbaik: **{metode_terbaik['Metode']}**  |  "
-            f"MAE = **{metode_terbaik['MAE']:.2f}**  |  "
-            f"RMSE = **{metode_terbaik['RMSE']:.2f}**"
-        )
-
         # Grafik evaluasi gabungan
         st.subheader("📉 Grafik Evaluasi Gabungan")
-        st.caption("Perbandingan hasil forecast setiap metode terhadap data test yang sebenarnya.")
+        st.caption("Perbandingan hasil forecast tiap metode terhadap data test yang sebenarnya.")
 
         fig_ev, ax_ev = plt.subplots(figsize=(13, 5))
         ax_ev.plot(train.index, train.values, color=WARNA['train'],
@@ -560,9 +435,12 @@ with tab3:
         ax_ev.plot(test.index, test.values, color=WARNA['test'],
                    linewidth=2.5, marker='o', markersize=7, label='Data Test (Aktual)')
         for nm, v in hasil_eval.items():
+            lw = 2.5 if nm == nama_terbaik else 1.5
             ax_ev.plot(v['forecast'].index, v['forecast'].values,
-                       color=WARNA[nm], linewidth=1.8, marker='s',
-                       markersize=5, linestyle='--', label=f'Forecast {nm}')
+                       color=WARNA[nm], linewidth=lw, marker='s',
+                       markersize=5 if nm != nama_terbaik else 7,
+                       linestyle='--' if nm != nama_terbaik else '-',
+                       label=f'{"★ " if nm == nama_terbaik else ""}{nm}')
         ax_ev.axvline(x=test.index[0], color=WARNA['vline'],
                       linestyle='--', linewidth=1.2, label='Awal Test')
         ax_ev.axvspan(test.index[0], test.index[-1], alpha=0.06, color='orange')
@@ -573,44 +451,12 @@ with tab3:
         st.pyplot(fig_ev)
         plt.close(fig_ev)
 
-        # Forecast ke depan
-        st.subheader("🔮 Forecast ke Depan — Semua Metode")
-        st.caption(f"Semua model di-retrain menggunakan seluruh {len(data_produk)} bulan data.")
+    def tampilkan_forecast_terbaik(nama_terbaik, fc_best, mae, rmse):
+        """Tampilkan tabel + grafik forecast ke depan metode terbaik."""
 
-        fut_idx  = list(hasil_future.values())[0].index
-        fut_comb = pd.DataFrame({'Periode': fut_idx.strftime('%b-%Y')})
-        for nm, fc in hasil_future.items():
-            fut_comb[nm] = np.round(fc.values, 2)
-        fut_comb.index = range(1, len(fut_comb) + 1)
-        st.dataframe(fut_comb, use_container_width=True)
+        st.subheader(f"🏆 Forecast ke Depan — Metode Terbaik: {nama_terbaik}")
+        st.caption(f"Model di-retrain menggunakan seluruh {len(data_produk)} bulan data.")
 
-        csv_fut = fut_comb.to_csv().encode('utf-8')
-        st.download_button("⬇️ Download Forecast ke Depan (Semua Metode)", csv_fut,
-                           f'forecast_ke_depan_{produk}_semua.csv', 'text/csv')
-
-        # Grafik forecast ke depan gabungan
-        fig_fa, ax_fa = plt.subplots(figsize=(13, 5))
-        ax_fa.plot(data_produk.index, data_produk.values, color=WARNA['aktual'],
-                   linewidth=2, marker='o', markersize=4,
-                   label=f'Data Aktual ({len(data_produk)} bln)')
-        for nm, fc in hasil_future.items():
-            ax_fa.plot(fc.index, fc.values, color=WARNA[nm], linewidth=1.8,
-                       marker='s', markersize=5, linestyle='--', label=f'Forecast — {nm}')
-        first_fc = list(hasil_future.values())[0]
-        ax_fa.axvline(x=first_fc.index[0], color='red', linestyle='--',
-                      linewidth=1.2, alpha=0.7, label='Awal Forecast')
-        ax_fa.axvspan(first_fc.index[0], first_fc.index[-1], alpha=0.06, color='green')
-        style_ax(ax_fa, title=f'Forecast ke Depan Gabungan Semua Metode — Produk {produk}',
-                 ylabel='Jumlah Keluar')
-        ax_fa.legend(loc='upper left', ncol=2)
-        plt.tight_layout()
-        st.pyplot(fig_fa)
-        plt.close(fig_fa)
-
-        # Grafik metode terbaik
-        st.subheader(f"🏆 Forecast ke Depan — Metode Terbaik: {metode_terbaik['Metode']}")
-
-        fc_best = hasil_future[metode_terbaik['Metode']]
         best_df = pd.DataFrame({
             'Periode':        fc_best.index.strftime('%b-%Y'),
             'Hasil Forecast': np.round(fc_best.values, 2),
@@ -620,8 +466,8 @@ with tab3:
 
         csv_best = best_df.to_csv().encode('utf-8')
         st.download_button(
-            f"⬇️ Download Forecast Terbaik ({metode_terbaik['Metode']})",
-            csv_best, f"forecast_terbaik_{produk}.csv", 'text/csv'
+            f"⬇️ Download Forecast ({nama_terbaik})",
+            csv_best, f"forecast_{produk}_{nama_terbaik}.csv", 'text/csv'
         )
 
         fig_bst, ax_bst = plt.subplots(figsize=(12, 4))
@@ -629,40 +475,157 @@ with tab3:
                     linewidth=2, marker='o', markersize=4,
                     label=f'Data Aktual ({len(data_produk)} bln)')
         ax_bst.plot(fc_best.index, fc_best.values,
-                    color=WARNA[metode_terbaik['Metode']], linewidth=2.5,
+                    color=WARNA[nama_terbaik], linewidth=2.5,
                     marker='s', markersize=8, linestyle='--',
-                    label=f"Forecast — {metode_terbaik['Metode']} (Terbaik)")
+                    label=f'Forecast — {nama_terbaik} (Terbaik)')
         ax_bst.axvline(x=fc_best.index[0], color='red', linestyle='--',
                        linewidth=1.2, alpha=0.7, label='Awal Forecast')
         ax_bst.axvspan(fc_best.index[0], fc_best.index[-1], alpha=0.08,
-                       color=WARNA[metode_terbaik['Metode']])
+                       color=WARNA[nama_terbaik])
         style_ax(ax_bst,
-                 title=f"Forecast Terbaik — {metode_terbaik['Metode']} — Produk {produk}",
+                 title=f'Forecast ke Depan — {nama_terbaik} — Produk {produk}',
                  ylabel='Jumlah Keluar')
         ax_bst.legend()
         plt.tight_layout()
         st.pyplot(fig_bst)
         plt.close(fig_bst)
 
-        # ==========================================
-        # RINGKASAN AKHIR
-        # ==========================================
-
+        # Ringkasan lengkap semua bulan
         st.markdown("---")
         st.subheader("📝 Ringkasan Hasil Analisis")
 
-        fc_best_val = int(round(fc_best.values[0]))
+        ringkasan_df = pd.DataFrame({
+            'Periode':        fc_best.index.strftime('%b-%Y'),
+            'Hasil Forecast': np.round(fc_best.values, 2),
+        })
+        ringkasan_df.index = range(1, len(ringkasan_df) + 1)
 
         st.success(
             f"**Produk:** {produk}  |  "
             f"**Cluster:** {pilih_cluster}  |  "
-            f"**Metode Terbaik:** {metode_terbaik['Metode']}  |  "
-            f"**MAE:** {metode_terbaik['MAE']:.2f}  |  "
-            f"**RMSE:** {metode_terbaik['RMSE']:.2f}  |  "
-            f"**Forecast bulan pertama:** {fc_best_val} unit"
+            f"**Metode Terbaik:** {nama_terbaik}  |  "
+            f"**MAE:** {mae:.2f}  |  "
+            f"**RMSE:** {rmse:.2f}"
         )
 
+        st.markdown("**📅 Detail Forecast per Bulan:**")
+        col_ring = st.columns(min(len(ringkasan_df), 6))
+        for i, row in ringkasan_df.iterrows():
+            with col_ring[(i - 1) % len(col_ring)]:
+                st.metric(
+                    label=row['Periode'],
+                    value=f"{int(row['Hasil Forecast'])} unit"
+                )
+
         st.caption(
-            "💡 Gunakan hasil forecast metode terbaik sebagai acuan perencanaan pengadaan barang "
-            "pada periode berikutnya."
+            "💡 Gunakan hasil forecast metode terbaik sebagai acuan perencanaan "
+            "pengadaan barang pada periode berikutnya."
         )
+
+    # ==========================================
+    # MODE OTOMATIS
+    # ==========================================
+
+    if metode == "🤖 Otomatis (Rekomendasi Sistem)":
+
+        with st.spinner("⏳ Menjalankan semua metode dan memilih yang terbaik..."):
+            hasil_eval, hasil_future = jalankan_semua_metode(
+                train, test, data_produk, jumlah_forecast
+            )
+
+        # Cari metode terbaik berdasarkan MAE
+        nama_terbaik = min(hasil_eval, key=lambda m: hasil_eval[m]['mae'])
+        mae_terbaik  = hasil_eval[nama_terbaik]['mae']
+        rmse_terbaik = hasil_eval[nama_terbaik]['rmse']
+        fc_best      = hasil_future[nama_terbaik]
+
+        st.success(f"✅ Sistem memilih metode terbaik: **{nama_terbaik}** "
+                   f"(MAE = {mae_terbaik:.2f}  |  RMSE = {rmse_terbaik:.2f})")
+
+        tampilkan_perbandingan(hasil_eval, hasil_future, nama_terbaik)
+        tampilkan_forecast_terbaik(nama_terbaik, fc_best, mae_terbaik, rmse_terbaik)
+
+    # ==========================================
+    # MODE MANUAL — SATU METODE
+    # ==========================================
+
+    else:
+
+        nama_map = {
+            "Holt-Winters Additive":       "HW Additive",
+            "Holt-Winters Multiplicative": "HW Multiplicative",
+            "ETS":   "ETS",
+            "ARIMA": "ARIMA",
+        }
+        nama = nama_map[metode]
+
+        with st.spinner(f"⏳ Menjalankan {nama}..."):
+            if nama == "HW Additive":
+                fc_eval = ExponentialSmoothing(
+                    train, trend='add', seasonal='add', seasonal_periods=12
+                ).fit().forecast(jumlah_forecast).clip(lower=0)
+                fc_future = ExponentialSmoothing(
+                    data_produk, trend='add', seasonal='add', seasonal_periods=12
+                ).fit().forecast(jumlah_forecast).clip(lower=0)
+
+            elif nama == "HW Multiplicative":
+                tr_nz = train.copy(); tr_nz[tr_nz <= 0] = 1
+                fc_eval = ExponentialSmoothing(
+                    tr_nz, trend='add', seasonal='mul', seasonal_periods=12
+                ).fit().forecast(jumlah_forecast).clip(lower=0)
+                fd_nz = data_produk.copy(); fd_nz[fd_nz <= 0] = 1
+                fc_future = ExponentialSmoothing(
+                    fd_nz, trend='add', seasonal='mul', seasonal_periods=12
+                ).fit().forecast(jumlah_forecast).clip(lower=0)
+
+            elif nama == "ETS":
+                fc_eval = ETSModel(
+                    train, error="add", trend="add", seasonal="add", seasonal_periods=12
+                ).fit(disp=False).forecast(jumlah_forecast).clip(lower=0)
+                fc_future = ETSModel(
+                    data_produk, error="add", trend="add", seasonal="add", seasonal_periods=12
+                ).fit(disp=False).forecast(jumlah_forecast).clip(lower=0)
+
+            elif nama == "ARIMA":
+                fc_eval   = ARIMA(train, order=(1, 1, 1)).fit().forecast(steps=jumlah_forecast)
+                fc_future = ARIMA(data_produk, order=(1, 1, 1)).fit().forecast(steps=jumlah_forecast)
+
+        mae  = mean_absolute_error(test.values, fc_eval.values)
+        rmse = np.sqrt(mean_squared_error(test.values, fc_eval.values))
+
+        # Tabel evaluasi
+        eval_df = pd.DataFrame({
+            'Periode':             fc_eval.index.strftime('%b-%Y'),
+            'Forecast (Evaluasi)': np.round(fc_eval.values, 2),
+            'Data Aktual (Test)':  np.round(test.values, 2),
+        })
+        eval_df.index = range(1, len(eval_df) + 1)
+
+        c1, c2 = st.columns(2)
+        with c1: st.metric("MAE",  f"{mae:.2f}")
+        with c2: st.metric("RMSE", f"{rmse:.2f}")
+
+        st.subheader("📋 Perbandingan Forecast vs Aktual (Periode Evaluasi)")
+        st.dataframe(eval_df, use_container_width=True)
+
+        # Grafik evaluasi
+        fig_e, ax_e = plt.subplots(figsize=(12, 4))
+        ax_e.plot(train.index, train.values, color=WARNA['train'],
+                  linewidth=2, marker='o', markersize=4, label='Data Train')
+        ax_e.plot(test.index, test.values, color=WARNA['test'],
+                  linewidth=2.5, marker='o', markersize=7, label='Data Test (Aktual)')
+        ax_e.plot(fc_eval.index, fc_eval.values, color=WARNA[nama],
+                  linewidth=2, marker='s', markersize=6, linestyle='--',
+                  label=f'Forecast {nama}')
+        ax_e.axvline(x=test.index[0], color=WARNA['vline'],
+                     linestyle='--', linewidth=1.2, label='Awal Test')
+        ax_e.axvspan(test.index[0], test.index[-1], alpha=0.06, color='orange')
+        style_ax(ax_e, title=f'Evaluasi Model {nama} — Produk {produk}',
+                 ylabel='Jumlah Keluar')
+        ax_e.legend()
+        plt.tight_layout()
+        st.pyplot(fig_e)
+        plt.close(fig_e)
+
+        # Forecast ke depan
+        tampilkan_forecast_terbaik(nama, fc_future, mae, rmse)
