@@ -434,13 +434,25 @@ with tab3:
                    linewidth=2, marker='o', markersize=4, label='Data Train')
         ax_ev.plot(test.index, test.values, color=WARNA['test'],
                    linewidth=2.5, marker='o', markersize=7, label='Data Test (Aktual)')
-        for nm, v in hasil_eval.items():
-            lw = 2.5 if nm == nama_terbaik else 1.5
-            ax_ev.plot(v['forecast'].index, v['forecast'].values,
-                       color=WARNA[nm], linewidth=lw, marker='s',
-                       markersize=5 if nm != nama_terbaik else 7,
-                       linestyle='--' if nm != nama_terbaik else '-',
-                       label=f'{"★ " if nm == nama_terbaik else ""}{nm}')
+      for nm, v in hasil_eval.items():
+         if nm == nama_terbaik:
+              # Metode terbaik — tebal, solid, penuh warna
+              ax_ev.plot(
+                    v['forecast'].index, v['forecast'].values,
+                    color=WARNA[nm], linewidth=3,
+                    marker='o', markersize=8,
+                    linestyle='-', zorder=5,
+                    label=f'★ {nm} (Terbaik)'
+              )
+         else:
+              # Metode lain — tipis, putus-putus, transparan
+              ax_ev.plot(
+                    v['forecast'].index, v['forecast'].values,
+                    color=WARNA[nm], linewidth=1.2,
+                    marker='s', markersize=4,
+                    linestyle='--', alpha=0.35,
+                    label=nm
+                )
         ax_ev.axvline(x=test.index[0], color=WARNA['vline'],
                       linestyle='--', linewidth=1.2, label='Awal Test')
         ax_ev.axvspan(test.index[0], test.index[-1], alpha=0.06, color='orange')
