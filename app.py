@@ -577,14 +577,15 @@ with tab3:
         rmse_terbaik = hasil_eval[nama_terbaik]['rmse']
         fc_best      = hasil_future[nama_terbaik]
 
-        st.success(f"✅ Sistem memilih metode terbaik: **{nama_terbaik}** "
-                   f"(MAE = {mae_terbaik:.2f}  |  RMSE = {rmse_terbaik:.2f})")
-
-        # 1. Forecast ke depan dulu
-        tampilkan_forecast_terbaik(nama_terbaik, fc_best, mae_terbaik, rmse_terbaik)
-
-        # 2. Baru perbandingan semua metode
+        # 1. Tabel perbandingan + grafik evaluasi gabungan dulu
         tampilkan_perbandingan(hasil_eval, nama_terbaik)
+
+        # 2. Baru umumkan metode terbaik
+        st.success(f"✅ Berdasarkan evaluasi di atas, sistem memilih metode terbaik: "
+                   f"**{nama_terbaik}** (MAE = {mae_terbaik:.2f}  |  RMSE = {rmse_terbaik:.2f})")
+
+        # 3. Forecast ke depan
+        tampilkan_forecast_terbaik(nama_terbaik, fc_best, mae_terbaik, rmse_terbaik)
 
     # ==========================================
     # MODE MANUAL — SATU METODE
