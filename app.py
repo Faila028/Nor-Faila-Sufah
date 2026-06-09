@@ -164,7 +164,7 @@ with tab2:
 
     fig_el, ax_el = plt.subplots(figsize=(7, 4))
     ax_el.plot(range(1, 10), inertia, marker='o', color=WARNA['aktual'],
-               linewidth=2, markersize=7, markerfacecolor='white', markeredgewidth=2)
+               linewidth=2.5, markersize=8, markerfacecolor='white', markeredgewidth=2.5)
     ax_el.fill_between(range(1, 10), inertia, alpha=0.08, color=WARNA['aktual'])
     style_ax(ax_el, title='Metode Elbow — Penentuan Jumlah Cluster Optimal',
              xlabel='Jumlah Cluster', ylabel='Inertia')
@@ -273,7 +273,7 @@ with tab3:
     if metode == "🤖 Otomatis (Rekomendasi Sistem)":
         st.info("💡 Sistem akan menjalankan semua metode, membandingkan akurasinya, "
                 "lalu otomatis menggunakan metode terbaik untuk forecast ke depan.")
-    
+
     st.markdown("---")
     run = st.button("🚀 Jalankan Forecast", use_container_width=True)
 
@@ -305,11 +305,11 @@ with tab3:
     # Grafik data aktual
     fig_akt, ax_akt = plt.subplots(figsize=(12, 4))
     ax_akt.plot(data_produk.index, data_produk.values,
-                color=WARNA['aktual'], linewidth=2, marker='o', markersize=5,
+                color=WARNA['aktual'], linewidth=2.5, marker='o', markersize=6,
                 label='Data Aktual')
     ax_akt.axvspan(test.index[0], test.index[-1], alpha=0.08, color='orange',
                    label=f'Periode Test ({len(test)} bln)')
-    ax_akt.axvline(x=test.index[0], color=WARNA['vline'], linestyle='--', linewidth=1.2)
+    ax_akt.axvline(x=test.index[0], color=WARNA['vline'], linestyle='--', linewidth=1.5)
     style_ax(ax_akt, title=f'Data Aktual Barang Keluar — Produk {produk}',
              ylabel='Jumlah Keluar')
     ax_akt.legend()
@@ -318,11 +318,10 @@ with tab3:
     plt.close(fig_akt)
 
     # ==========================================
-    # HELPER
+    # HELPER — JALANKAN SEMUA METODE
     # ==========================================
 
     def jalankan_semua_metode(train, test, data_produk, jumlah_forecast):
-        """Jalankan 4 metode, kembalikan hasil evaluasi & forecast ke depan."""
         hasil_eval   = {}
         hasil_future = {}
 
@@ -380,91 +379,12 @@ with tab3:
 
         return hasil_eval, hasil_future
 
-    def tampilkan_perbandingan(hasil_eval, hasil_future, nama_terbaik):
-        """Tampilkan tabel & grafik perbandingan semua metode."""
-
-        perbandingan = pd.DataFrame([
-            {'Metode': m, 'MAE': round(v['mae'], 2), 'RMSE': round(v['rmse'], 2)}
-            for m, v in hasil_eval.items()
-        ])
-        perbandingan.index = range(1, len(perbandingan) + 1)
-
-        st.subheader("📊 Perbandingan Akurasi Semua Metode")
-        st.caption("Baris hijau = metode dengan MAE terkecil (terbaik).")
-
-        def highlight_best(row):
-            return ['background-color: #d4edda; font-weight: bold'
-                    if row['Metode'] == nama_terbaik else '' for _ in row]
-
-        st.dataframe(
-            perbandingan.style.apply(highlight_best, axis=1),
-            use_container_width=True
-        )
-
-        # Grafik MAE & RMSE berdampingan
-        metode_list = perbandingan['Metode'].tolist()
-        warna_list  = [WARNA[m] for m in metode_list]
-
-        fig_cmp, (ax_mae, ax_rmse) = plt.subplots(1, 2, figsize=(13, 4))
-
-        b1 = ax_mae.bar(metode_list, perbandingan['MAE'],
-                        color=warna_list, edgecolor='white', width=0.5)
-        ax_mae.bar_label(b1, fmt='%.2f', padding=4, fontsize=10, fontweight='bold')
-        style_ax(ax_mae, title='Perbandingan MAE', ylabel='MAE')
-        ax_mae.set_ylim(0, perbandingan['MAE'].max() * 1.3)
-
-        b2 = ax_rmse.bar(metode_list, perbandingan['RMSE'],
-                         color=warna_list, edgecolor='white', width=0.5)
-        ax_rmse.bar_label(b2, fmt='%.2f', padding=4, fontsize=10, fontweight='bold')
-        style_ax(ax_rmse, title='Perbandingan RMSE', ylabel='RMSE')
-        ax_rmse.set_ylim(0, perbandingan['RMSE'].max() * 1.3)
-
-        plt.suptitle('Evaluasi Akurasi Semua Metode', fontsize=13,
-                     fontweight='bold', y=1.02)
-        plt.tight_layout()
-        st.pyplot(fig_cmp)
-        plt.close(fig_cmp)
-
-        # Grafik evaluasi gabungan
-        st.subheader("📉 Grafik Evaluasi Gabungan")
-        st.caption("Perbandingan hasil forecast tiap metode terhadap data test yang sebenarnya.")
-
-        fig_ev, ax_ev = plt.subplots(figsize=(13, 5))
-        ax_ev.plot(train.index, train.values, color=WARNA['train'],
-                   linewidth=2, marker='o', markersize=4, label='Data Train')
-        ax_ev.plot(test.index, test.values, color=WARNA['test'],
-                   linewidth=2.5, marker='o', markersize=7, label='Data Test (Aktual)')
-        for nm, v in hasil_eval.items():
-         if nm == nama_terbaik:
-              # Metode terbaik — tebal, solid, penuh warna
-              ax_ev.plot(
-                    v['forecast'].index, v['forecast'].values,
-                    color=WARNA[nm], linewidth=3,
-                    marker='o', markersize=8,
-                    linestyle='-', zorder=5,
-                    label=f'★ {nm} (Terbaik)'
-              )
-         else:
-              # Metode lain — tipis, putus-putus, transparan
-              ax_ev.plot(
-                    v['forecast'].index, v['forecast'].values,
-                    color=WARNA[nm], linewidth=1.2,
-                    marker='s', markersize=4,
-                    linestyle='--', alpha=0.35,
-                    label=nm
-                )
-        ax_ev.axvline(x=test.index[0], color=WARNA['vline'],
-                      linestyle='--', linewidth=1.2, label='Awal Test')
-        ax_ev.axvspan(test.index[0], test.index[-1], alpha=0.06, color='orange')
-        style_ax(ax_ev, title=f'Evaluasi Gabungan Semua Metode — Produk {produk}',
-                 ylabel='Jumlah Keluar')
-        ax_ev.legend(loc='upper left', ncol=2)
-        plt.tight_layout()
-        st.pyplot(fig_ev)
-        plt.close(fig_ev)
+    # ==========================================
+    # HELPER — TAMPILKAN FORECAST TERBAIK
+    # (urutan 1: ditampilkan duluan)
+    # ==========================================
 
     def tampilkan_forecast_terbaik(nama_terbaik, fc_best, mae, rmse):
-        """Tampilkan tabel + grafik forecast ke depan metode terbaik."""
 
         st.subheader(f"🏆 Forecast ke Depan — Metode Terbaik: {nama_terbaik}")
         st.caption(f"Model di-retrain menggunakan seluruh {len(data_produk)} bulan data.")
@@ -482,16 +402,17 @@ with tab3:
             csv_best, f"forecast_{produk}_{nama_terbaik}.csv", 'text/csv'
         )
 
-        fig_bst, ax_bst = plt.subplots(figsize=(12, 4))
-        ax_bst.plot(data_produk.index, data_produk.values, color=WARNA['aktual'],
-                    linewidth=2, marker='o', markersize=4,
+        # Grafik forecast ke depan
+        fig_bst, ax_bst = plt.subplots(figsize=(12, 4.5))
+        ax_bst.plot(data_produk.index, data_produk.values,
+                    color=WARNA['aktual'], linewidth=2.5, marker='o', markersize=6,
                     label=f'Data Aktual ({len(data_produk)} bln)')
         ax_bst.plot(fc_best.index, fc_best.values,
-                    color=WARNA[nama_terbaik], linewidth=2.5,
-                    marker='s', markersize=8, linestyle='--',
+                    color=WARNA[nama_terbaik], linewidth=3,
+                    marker='o', markersize=9, linestyle='--',
                     label=f'Forecast — {nama_terbaik} (Terbaik)')
         ax_bst.axvline(x=fc_best.index[0], color='red', linestyle='--',
-                       linewidth=1.2, alpha=0.7, label='Awal Forecast')
+                       linewidth=1.5, alpha=0.7, label='Awal Forecast')
         ax_bst.axvspan(fc_best.index[0], fc_best.index[-1], alpha=0.08,
                        color=WARNA[nama_terbaik])
         style_ax(ax_bst,
@@ -502,15 +423,9 @@ with tab3:
         st.pyplot(fig_bst)
         plt.close(fig_bst)
 
-        # Ringkasan lengkap semua bulan
+        # Ringkasan metrik per bulan
         st.markdown("---")
         st.subheader("📝 Ringkasan Hasil Analisis")
-
-        ringkasan_df = pd.DataFrame({
-            'Periode':        fc_best.index.strftime('%b-%Y'),
-            'Hasil Forecast': np.round(fc_best.values, 2),
-        })
-        ringkasan_df.index = range(1, len(ringkasan_df) + 1)
 
         st.success(
             f"**Produk:** {produk}  |  "
@@ -521,18 +436,130 @@ with tab3:
         )
 
         st.markdown("**📅 Detail Forecast per Bulan:**")
-        col_ring = st.columns(min(len(ringkasan_df), 6))
-        for i, row in ringkasan_df.iterrows():
+        col_ring = st.columns(min(len(best_df), 6))
+        for i, row in best_df.iterrows():
             with col_ring[(i - 1) % len(col_ring)]:
                 st.metric(
                     label=row['Periode'],
                     value=f"{int(row['Hasil Forecast'])} unit"
                 )
 
-        st.caption(
-            "💡 Gunakan hasil forecast metode terbaik sebagai acuan perencanaan "
-            "pengadaan barang pada periode berikutnya."
+        st.caption("💡 Gunakan hasil forecast metode terbaik sebagai acuan perencanaan "
+                   "pengadaan barang pada periode berikutnya.")
+
+    # ==========================================
+    # HELPER — TAMPILKAN PERBANDINGAN
+    # (urutan 2: ditampilkan setelah forecast)
+    # ==========================================
+
+    def tampilkan_perbandingan(hasil_eval, nama_terbaik):
+
+        st.markdown("---")
+        st.subheader("📊 Perbandingan Akurasi Semua Metode")
+        st.caption("Baris hijau = metode terbaik. Ditampilkan sebagai referensi tambahan.")
+
+        perbandingan = pd.DataFrame([
+            {'Metode': m, 'MAE': round(v['mae'], 2), 'RMSE': round(v['rmse'], 2)}
+            for m, v in hasil_eval.items()
+        ])
+        perbandingan.index = range(1, len(perbandingan) + 1)
+
+        def highlight_best(row):
+            return ['background-color: #d4edda; font-weight: bold'
+                    if row['Metode'] == nama_terbaik else '' for _ in row]
+
+        st.dataframe(
+            perbandingan.style.apply(highlight_best, axis=1),
+            use_container_width=True
         )
+
+        # Grafik MAE & RMSE berdampingan
+        metode_list = perbandingan['Metode'].tolist()
+        warna_list  = [WARNA[m] for m in metode_list]
+        alpha_list  = [1.0 if m == nama_terbaik else 0.4 for m in metode_list]
+
+        fig_cmp, (ax_mae, ax_rmse) = plt.subplots(1, 2, figsize=(13, 4))
+
+        for i, m in enumerate(metode_list):
+            ax_mae.bar(m, perbandingan.loc[i+1, 'MAE'],
+                       color=warna_list[i], alpha=alpha_list[i],
+                       edgecolor='white', width=0.5)
+            ax_rmse.bar(m, perbandingan.loc[i+1, 'RMSE'],
+                        color=warna_list[i], alpha=alpha_list[i],
+                        edgecolor='white', width=0.5)
+
+        for rect, val in zip(ax_mae.patches, perbandingan['MAE']):
+            idx = list(ax_mae.patches).index(rect)
+            fw  = 'bold' if metode_list[idx] == nama_terbaik else 'normal'
+            ax_mae.text(rect.get_x() + rect.get_width() / 2,
+                        rect.get_height() + perbandingan['MAE'].max() * 0.02,
+                        f'{val:.2f}', ha='center', va='bottom',
+                        fontsize=10, fontweight=fw)
+
+        for rect, val in zip(ax_rmse.patches, perbandingan['RMSE']):
+            idx = list(ax_rmse.patches).index(rect)
+            fw  = 'bold' if metode_list[idx] == nama_terbaik else 'normal'
+            ax_rmse.text(rect.get_x() + rect.get_width() / 2,
+                         rect.get_height() + perbandingan['RMSE'].max() * 0.02,
+                         f'{val:.2f}', ha='center', va='bottom',
+                         fontsize=10, fontweight=fw)
+
+        style_ax(ax_mae, title='Perbandingan MAE', ylabel='MAE')
+        ax_mae.set_ylim(0, perbandingan['MAE'].max() * 1.3)
+        style_ax(ax_rmse, title='Perbandingan RMSE', ylabel='RMSE')
+        ax_rmse.set_ylim(0, perbandingan['RMSE'].max() * 1.3)
+        plt.suptitle('Evaluasi Akurasi Semua Metode', fontsize=13,
+                     fontweight='bold', y=1.02)
+        plt.tight_layout()
+        st.pyplot(fig_cmp)
+        plt.close(fig_cmp)
+
+        # ==========================================
+        # GRAFIK EVALUASI GABUNGAN
+        # Metode terbaik : tebal, solid, penuh warna
+        # Metode lain    : tipis, putus-putus, transparan
+        # ==========================================
+
+        st.subheader("📉 Grafik Evaluasi Gabungan")
+        st.caption("Metode terbaik ditampilkan paling menonjol — metode lain sebagai pembanding.")
+
+        fig_ev, ax_ev = plt.subplots(figsize=(13, 5))
+
+        ax_ev.plot(train.index, train.values, color=WARNA['train'],
+                   linewidth=2.5, marker='o', markersize=5, label='Data Train')
+        ax_ev.plot(test.index, test.values, color=WARNA['test'],
+                   linewidth=2.5, marker='o', markersize=7, label='Data Test (Aktual)')
+
+        # Metode lain — pudar, di belakang
+        for nm, v in hasil_eval.items():
+            if nm != nama_terbaik:
+                ax_ev.plot(
+                    v['forecast'].index, v['forecast'].values,
+                    color=WARNA[nm], linewidth=1.5,
+                    marker='s', markersize=5,
+                    linestyle='--', alpha=0.35,
+                    label=nm
+                )
+
+        # Metode terbaik — tebal, solid, di depan
+        ax_ev.plot(
+            hasil_eval[nama_terbaik]['forecast'].index,
+            hasil_eval[nama_terbaik]['forecast'].values,
+            color=WARNA[nama_terbaik], linewidth=3.5,
+            marker='o', markersize=9,
+            linestyle='-', zorder=5,
+            label=f'★ {nama_terbaik} (Terbaik)'
+        )
+
+        ax_ev.axvline(x=test.index[0], color=WARNA['vline'],
+                      linestyle='--', linewidth=1.5, label='Awal Test')
+        ax_ev.axvspan(test.index[0], test.index[-1], alpha=0.06, color='orange')
+        style_ax(ax_ev, title=f'Evaluasi Gabungan Semua Metode — Produk {produk}',
+                 ylabel='Jumlah Keluar')
+        ax_ev.legend(loc='upper left', ncol=2)
+        plt.tight_layout()
+        st.pyplot(fig_ev)
+        plt.close(fig_ev)
 
     # ==========================================
     # MODE OTOMATIS
@@ -545,7 +572,6 @@ with tab3:
                 train, test, data_produk, jumlah_forecast
             )
 
-        # Cari metode terbaik berdasarkan MAE
         nama_terbaik = min(hasil_eval, key=lambda m: hasil_eval[m]['mae'])
         mae_terbaik  = hasil_eval[nama_terbaik]['mae']
         rmse_terbaik = hasil_eval[nama_terbaik]['rmse']
@@ -554,8 +580,11 @@ with tab3:
         st.success(f"✅ Sistem memilih metode terbaik: **{nama_terbaik}** "
                    f"(MAE = {mae_terbaik:.2f}  |  RMSE = {rmse_terbaik:.2f})")
 
-        tampilkan_perbandingan(hasil_eval, hasil_future, nama_terbaik)
+        # 1. Forecast ke depan dulu
         tampilkan_forecast_terbaik(nama_terbaik, fc_best, mae_terbaik, rmse_terbaik)
+
+        # 2. Baru perbandingan semua metode
+        tampilkan_perbandingan(hasil_eval, nama_terbaik)
 
     # ==========================================
     # MODE MANUAL — SATU METODE
@@ -573,39 +602,37 @@ with tab3:
 
         with st.spinner(f"⏳ Menjalankan {nama}..."):
             if nama == "HW Additive":
-                fc_eval = ExponentialSmoothing(
-                    train, trend='add', seasonal='add', seasonal_periods=12
-                ).fit().forecast(jumlah_forecast).clip(lower=0)
-                fc_future = ExponentialSmoothing(
-                    data_produk, trend='add', seasonal='add', seasonal_periods=12
-                ).fit().forecast(jumlah_forecast).clip(lower=0)
+                fc_eval   = ExponentialSmoothing(train, trend='add', seasonal='add',
+                             seasonal_periods=12).fit().forecast(jumlah_forecast).clip(lower=0)
+                fc_future = ExponentialSmoothing(data_produk, trend='add', seasonal='add',
+                             seasonal_periods=12).fit().forecast(jumlah_forecast).clip(lower=0)
 
             elif nama == "HW Multiplicative":
                 tr_nz = train.copy(); tr_nz[tr_nz <= 0] = 1
-                fc_eval = ExponentialSmoothing(
-                    tr_nz, trend='add', seasonal='mul', seasonal_periods=12
-                ).fit().forecast(jumlah_forecast).clip(lower=0)
+                fc_eval = ExponentialSmoothing(tr_nz, trend='add', seasonal='mul',
+                           seasonal_periods=12).fit().forecast(jumlah_forecast).clip(lower=0)
                 fd_nz = data_produk.copy(); fd_nz[fd_nz <= 0] = 1
-                fc_future = ExponentialSmoothing(
-                    fd_nz, trend='add', seasonal='mul', seasonal_periods=12
-                ).fit().forecast(jumlah_forecast).clip(lower=0)
+                fc_future = ExponentialSmoothing(fd_nz, trend='add', seasonal='mul',
+                             seasonal_periods=12).fit().forecast(jumlah_forecast).clip(lower=0)
 
             elif nama == "ETS":
-                fc_eval = ETSModel(
-                    train, error="add", trend="add", seasonal="add", seasonal_periods=12
-                ).fit(disp=False).forecast(jumlah_forecast).clip(lower=0)
-                fc_future = ETSModel(
-                    data_produk, error="add", trend="add", seasonal="add", seasonal_periods=12
-                ).fit(disp=False).forecast(jumlah_forecast).clip(lower=0)
+                fc_eval   = ETSModel(train, error="add", trend="add", seasonal="add",
+                             seasonal_periods=12).fit(disp=False).forecast(jumlah_forecast).clip(lower=0)
+                fc_future = ETSModel(data_produk, error="add", trend="add", seasonal="add",
+                             seasonal_periods=12).fit(disp=False).forecast(jumlah_forecast).clip(lower=0)
 
             elif nama == "ARIMA":
-                fc_eval   = ARIMA(train, order=(1, 1, 1)).fit().forecast(steps=jumlah_forecast)
-                fc_future = ARIMA(data_produk, order=(1, 1, 1)).fit().forecast(steps=jumlah_forecast)
+                fc_eval   = ARIMA(train, order=(1,1,1)).fit().forecast(steps=jumlah_forecast)
+                fc_future = ARIMA(data_produk, order=(1,1,1)).fit().forecast(steps=jumlah_forecast)
 
         mae  = mean_absolute_error(test.values, fc_eval.values)
         rmse = np.sqrt(mean_squared_error(test.values, fc_eval.values))
 
-        # Tabel evaluasi
+        # Tabel & metrik evaluasi
+        c1, c2 = st.columns(2)
+        with c1: st.metric("MAE",  f"{mae:.2f}")
+        with c2: st.metric("RMSE", f"{rmse:.2f}")
+
         eval_df = pd.DataFrame({
             'Periode':             fc_eval.index.strftime('%b-%Y'),
             'Forecast (Evaluasi)': np.round(fc_eval.values, 2),
@@ -613,24 +640,20 @@ with tab3:
         })
         eval_df.index = range(1, len(eval_df) + 1)
 
-        c1, c2 = st.columns(2)
-        with c1: st.metric("MAE",  f"{mae:.2f}")
-        with c2: st.metric("RMSE", f"{rmse:.2f}")
-
         st.subheader("📋 Perbandingan Forecast vs Aktual (Periode Evaluasi)")
         st.dataframe(eval_df, use_container_width=True)
 
         # Grafik evaluasi
-        fig_e, ax_e = plt.subplots(figsize=(12, 4))
+        fig_e, ax_e = plt.subplots(figsize=(12, 4.5))
         ax_e.plot(train.index, train.values, color=WARNA['train'],
-                  linewidth=2, marker='o', markersize=4, label='Data Train')
+                  linewidth=2.5, marker='o', markersize=5, label='Data Train')
         ax_e.plot(test.index, test.values, color=WARNA['test'],
                   linewidth=2.5, marker='o', markersize=7, label='Data Test (Aktual)')
         ax_e.plot(fc_eval.index, fc_eval.values, color=WARNA[nama],
-                  linewidth=2, marker='s', markersize=6, linestyle='--',
+                  linewidth=3, marker='o', markersize=8, linestyle='-',
                   label=f'Forecast {nama}')
         ax_e.axvline(x=test.index[0], color=WARNA['vline'],
-                     linestyle='--', linewidth=1.2, label='Awal Test')
+                     linestyle='--', linewidth=1.5, label='Awal Test')
         ax_e.axvspan(test.index[0], test.index[-1], alpha=0.06, color='orange')
         style_ax(ax_e, title=f'Evaluasi Model {nama} — Produk {produk}',
                  ylabel='Jumlah Keluar')
