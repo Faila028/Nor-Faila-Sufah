@@ -195,22 +195,6 @@ with tab1:
         st.success("✅ Tidak ada missing values. Data siap dianalisis.")
 
     # ==========================================
-    # PIVOT TABLE
-    # ==========================================
-
-    st.markdown("---")
-    st.subheader("📊 Pivot Table Barang Keluar per Bulan")
-    st.caption("Setiap baris = 1 produk, setiap kolom = total keluar per bulan.")
-    st.dataframe(pivot_table, use_container_width=True)
-
-    csv_pivot = pivot_table.to_csv().encode('utf-8')
-    st.download_button("⬇️ Download Pivot Table", csv_pivot,
-                       'pivot_barang_keluar.csv', 'text/csv')
-
-    st.caption(f"📦 Total produk dalam pivot table: **{len(pivot_table):,} produk** "
-               f"dari **{len(urutan_bulan)} bulan** periode Januari 2023 – Desember 2025.")
-
-    # ==========================================
     # PRODUK TIDAK PERNAH TERJUAL
     # ==========================================
 
@@ -238,40 +222,27 @@ with tab1:
         st.success("✅ Semua produk memiliki setidaknya satu transaksi barang keluar.")
 
     # ==========================================
-    # PRODUK AKTIVITAS SANGAT RENDAH
+    # PIVOT TABLE
     # ==========================================
 
     st.markdown("---")
-    st.subheader("📉 Produk dengan Aktivitas Sangat Rendah (Total Keluar ≤ 5)")
+    st.subheader("📊 Pivot Table Barang Keluar per Bulan")
+    st.caption("Setiap baris = 1 produk, setiap kolom = total keluar per bulan.")
+    st.dataframe(pivot_table, use_container_width=True)
 
-    total_per_produk_valid = df.groupby('id_produk')['keluar'].sum()
-    produk_rendah = total_per_produk_valid[
-        (total_per_produk_valid > 0) & (total_per_produk_valid <= 5)
-    ].reset_index()
-    produk_rendah.columns = ['ID Produk', 'Total Keluar']
-    produk_rendah = produk_rendah.sort_values('Total Keluar').reset_index(drop=True)
-    produk_rendah.index = range(1, len(produk_rendah) + 1)
+    csv_pivot = pivot_table.to_csv().encode('utf-8')
+    st.download_button("⬇️ Download Pivot Table", csv_pivot,
+                       'pivot_barang_keluar.csv', 'text/csv')
 
-    if len(produk_rendah) > 0:
-        st.info(
-            f"ℹ️ Terdapat **{len(produk_rendah)} produk** dengan total barang keluar antara 1–5 unit. "
-            "Produk-produk ini termasuk kategori pergerakan sangat lambat."
-        )
-        st.dataframe(produk_rendah, use_container_width=True)
-        csv_rendah = produk_rendah.to_csv().encode('utf-8')
-        st.download_button(
-            "⬇️ Download Produk Aktivitas Rendah",
-            csv_rendah, 'produk_aktivitas_rendah.csv', 'text/csv'
-        )
-    else:
-        st.success("✅ Tidak ada produk dengan total keluar ≤ 5.")
+    st.caption(f"📦 Total produk dalam pivot table: **{len(pivot_table):,} produk** "
+               f"dari **{len(urutan_bulan)} bulan** periode Januari 2023 – Desember 2025.")
 
 # ==========================================
 # PERSIAPAN CLUSTERING
 # ==========================================
 
 pivot_table['Total'] = pivot_table.sum(axis=1)
-filtered_data        = pivot_table[pivot_table['Total'] > 1].copy()
+filtered_data        = pivot_table.copy()
 scaler               = StandardScaler()
 scaled_data          = scaler.fit_transform(filtered_data.drop(columns=['Total']))
 
@@ -282,24 +253,6 @@ scaled_data          = scaler.fit_transform(filtered_data.drop(columns=['Total']
 with tab2:
 
     st.subheader("📌 Clustering Produk dengan K-Means")
-
-    # Info ringkas hasil filtering sebelum clustering
-    n_sebelum = len(pivot_table)
-    n_sesudah = len(filtered_data)
-    n_dibuang = n_sebelum - n_sesudah
-
-    col_cl0, col_cl1, col_cl2 = st.columns(3)
-    with col_cl0: st.metric("Total Produk (Pivot)", f"{n_sebelum:,}")
-    with col_cl1: st.metric("Produk Digunakan (Total > 1)", f"{n_sesudah:,}")
-    with col_cl2: st.metric("Produk Dikeluarkan (Total ≤ 1)", f"{n_dibuang:,}")
-
-    if n_dibuang > 0:
-        produk_dibuang = pivot_table[pivot_table['Total'] <= 1].index.tolist()
-        with st.expander(f"🔎 Lihat {n_dibuang} Produk yang Dikeluarkan dari Clustering (Total ≤ 1)"):
-            df_dibuang = pd.DataFrame({'ID Produk': produk_dibuang})
-            df_dibuang.index = range(1, len(df_dibuang) + 1)
-            st.dataframe(df_dibuang, use_container_width=True)
-
     st.markdown("---")
 
     inertia = []
