@@ -333,11 +333,12 @@ with tab2:
         warna_cl      = [warna_map.get(k, '#888888') for k in kategori_list]
 
         fig_cl, ax_cl = plt.subplots(figsize=(6, 3.2))
-        # Urutan dari bawah ke atas: Slow, Medium, Fast (agar Fast di atas)
+        # Urutan dari bawah ke atas: Slow(3), Medium(2), Fast(1)
+        # Sehingga Fast tampil paling atas dengan nomor 1
         kategori_rev = kategori_list[::-1]
         jumlah_rev   = jumlah_list[::-1]
         warna_rev    = [warna_map.get(k, '#888888') for k in kategori_rev]
-        posisi       = list(range(1, len(kategori_rev) + 1))
+        posisi       = list(range(len(kategori_rev), 0, -1))  # [3, 2, 1]
 
         bars = ax_cl.barh(
             posisi, jumlah_rev,
