@@ -189,7 +189,6 @@ with tab1:
             f"⚠️ Ditemukan **{total_missing:,} baris tidak valid** "
             f"({missing_id_produk:,} baris ID produk kosong & "
             f"{missing_keluar:,} baris nilai keluar kosong). "
-            "Baris tersebut **tidak diikutsertakan** dalam proses analisis."
         )
     else:
         st.success("✅ Tidak ada missing values. Data siap dianalisis.")
