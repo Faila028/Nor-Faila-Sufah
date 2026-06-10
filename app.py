@@ -298,31 +298,43 @@ with tab2:
     filtered_data['Cluster'] = cluster
 
     cluster_avg = filtered_data.groupby('Cluster')['Total'].mean().sort_values(ascending=False)
+    label_kategori = ['Fast Moving', 'Medium Moving', 'Slow Moving']
     mapping_cluster = {}
-    for i, idx in enumerate(cluster_avg.index[:3]):
-        mapping_cluster[idx] = ['Fast Moving', 'Medium Moving', 'Slow Moving'][i]
+    for i, idx in enumerate(cluster_avg.index):
+        if i < len(label_kategori):
+            mapping_cluster[idx] = label_kategori[i]
+        else:
+            mapping_cluster[idx] = f'Cluster {i+1}'
 
     filtered_data['Kategori'] = filtered_data['Cluster'].map(mapping_cluster)
 
-    cluster_count = filtered_data['Kategori'].value_counts().reindex(
-        ['Fast Moving', 'Medium Moving', 'Slow Moving']
-    )
+    urutan_kategori = [k for k in label_kategori if k in filtered_data['Kategori'].values]
+    cluster_count = filtered_data['Kategori'].value_counts().reindex(urutan_kategori)
     tabel_cluster = pd.DataFrame({
         'Kategori':      cluster_count.index,
         'Jumlah Produk': cluster_count.values,
     })
     tabel_cluster.index = range(1, len(tabel_cluster) + 1)
 
+    # Warna sesuai urutan Fast > Medium > Slow
+    warna_map = {
+        'Fast Moving':   '#2c7bb6',
+        'Medium Moving': '#f4a261',
+        'Slow Moving':   '#d9534f',
+    }
+
     col_tbl, col_chart = st.columns([1, 1.5])
     with col_tbl:
         st.subheader("Jumlah Produk per Cluster")
         st.dataframe(tabel_cluster, use_container_width=True)
     with col_chart:
-        warna_cl = ['#2c7bb6', '#f4a261', '#d9534f']
+        kategori_list = tabel_cluster['Kategori'].tolist()
+        warna_cl = [warna_map.get(k, '#888888') for k in kategori_list]
+
         fig_cl, ax_cl = plt.subplots(figsize=(6, 3.2))
         bars = ax_cl.barh(
-            tabel_cluster['Kategori'][::-1],
-            tabel_cluster['Jumlah Produk'][::-1],
+            kategori_list[::-1],
+            tabel_cluster['Jumlah Produk'].tolist()[::-1],
             color=warna_cl[::-1], height=0.5, edgecolor='white'
         )
         ax_cl.bar_label(bars, fmt='%d', padding=5, fontsize=11, fontweight='bold')
