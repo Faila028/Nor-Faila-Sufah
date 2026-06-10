@@ -89,9 +89,35 @@ if uploaded_file is None:
 # BACA DATA
 # ==========================================
 
-df = pd.read_excel(uploaded_file)
-df['tgl_input'] = pd.to_datetime(df['tgl_input'])
-df['Bulan']     = df['tgl_input'].dt.strftime('%b-%y')
+df_raw = pd.read_excel(uploaded_file)
+df_raw['tgl_input'] = pd.to_datetime(df_raw['tgl_input'])
+df_raw['Bulan']     = df_raw['tgl_input'].dt.strftime('%b-%y')
+
+# ==========================================
+# DETEKSI MISSING VALUES (SEBELUM CLEANING)
+# ==========================================
+
+missing_id_produk = df_raw['id_produk'].isna().sum()
+missing_keluar    = df_raw['keluar'].isna().sum()
+total_missing     = missing_id_produk + missing_keluar
+
+# Produk dengan id_produk kosong
+baris_id_kosong = df_raw[df_raw['id_produk'].isna()].copy()
+
+# Produk yang tidak pernah terjual sama sekali (keluar = 0 atau NaN semua bulan)
+# Hitung per produk: total keluar (NaN dianggap 0)
+total_per_produk = df_raw.groupby('id_produk')['keluar'].sum(min_count=1).fillna(0)
+produk_tidak_terjual = total_per_produk[total_per_produk == 0].index.tolist()
+
+# ==========================================
+# CLEANING DATA
+# ==========================================
+
+df = df_raw.dropna(subset=['id_produk', 'keluar']).copy()
+
+# ==========================================
+# PIVOT TABLE
+# ==========================================
 
 pivot_table = df.pivot_table(
     index='id_produk', columns='Bulan',
@@ -124,13 +150,118 @@ tab1, tab2, tab3 = st.tabs([
 
 with tab1:
     st.subheader("📄 Data Awal")
-    st.dataframe(df.head(), use_container_width=True)
+    st.dataframe(df_raw.head(10), use_container_width=True)
 
     c1, c2, c3 = st.columns(3)
-    with c1: st.metric("Jumlah Data",         len(df))
-    with c2: st.metric("Jumlah Produk",       df['id_produk'].nunique())
-    with c3: st.metric("Total Barang Keluar", int(df['keluar'].sum()))
+    with c1: st.metric("Jumlah Data",         f"{len(df_raw):,}")
+    with c2: st.metric("Jumlah Produk",       df_raw['id_produk'].nunique())
+    with c3: st.metric("Total Barang Keluar", f"{int(df['keluar'].sum()):,}")
 
+    # ==========================================
+    # SECTION: KUALITAS DATA & MISSING VALUES
+    # ==========================================
+
+    st.markdown("---")
+    st.subheader("🔍 Kualitas Data & Missing Values")
+
+    col_mv1, col_mv2, col_mv3 = st.columns(3)
+    with col_mv1:
+        st.metric(
+            label="Baris ID Produk Kosong",
+            value=f"{missing_id_produk:,}",
+            delta="diabaikan" if missing_id_produk > 0 else "✅ lengkap",
+            delta_color="off" if missing_id_produk > 0 else "normal"
+        )
+    with col_mv2:
+        st.metric(
+            label="Baris Nilai Keluar Kosong",
+            value=f"{missing_keluar:,}",
+            delta="diabaikan" if missing_keluar > 0 else "✅ lengkap",
+            delta_color="off" if missing_keluar > 0 else "normal"
+        )
+    with col_mv3:
+        st.metric(
+            label="Total Baris Tidak Valid",
+            value=f"{total_missing:,}",
+            delta=f"tersisa {len(df):,} baris valid",
+            delta_color="off"
+        )
+
+    if missing_id_produk > 0 or missing_keluar > 0:
+        st.warning(
+            f"⚠️ Ditemukan **{total_missing:,} baris tidak valid** "
+            f"({missing_id_produk:,} baris ID produk kosong & "
+            f"{missing_keluar:,} baris nilai keluar kosong). "
+            "Baris tersebut **tidak diikutsertakan** dalam proses analisis."
+        )
+    else:
+        st.success("✅ Tidak ada missing values. Data siap dianalisis.")
+
+    # Detail baris dengan id_produk kosong
+    if missing_id_produk > 0:
+        with st.expander(f"🔎 Lihat {missing_id_produk} Baris dengan ID Produk Kosong"):
+            st.dataframe(baris_id_kosong, use_container_width=True)
+            csv_missing = baris_id_kosong.to_csv(index=False).encode('utf-8')
+            st.download_button(
+                "⬇️ Download Baris ID Produk Kosong",
+                csv_missing, 'baris_id_kosong.csv', 'text/csv'
+            )
+
+    # Produk yang tidak pernah terjual
+    st.markdown("---")
+    st.subheader("📭 Produk Tidak Pernah Terjual")
+
+    if len(produk_tidak_terjual) > 0:
+        df_tidak_terjual = pd.DataFrame({
+            'No': range(1, len(produk_tidak_terjual) + 1),
+            'ID Produk': produk_tidak_terjual
+        }).set_index('No')
+
+        st.warning(
+            f"⚠️ Terdapat **{len(produk_tidak_terjual)} produk** dengan total barang keluar = 0 "
+            "sepanjang periode Januari 2023 – Desember 2025."
+        )
+        st.dataframe(df_tidak_terjual, use_container_width=True)
+
+        csv_tidak_terjual = df_tidak_terjual.to_csv().encode('utf-8')
+        st.download_button(
+            "⬇️ Download Daftar Produk Tidak Terjual",
+            csv_tidak_terjual, 'produk_tidak_terjual.csv', 'text/csv'
+        )
+    else:
+        st.success("✅ Semua produk memiliki setidaknya satu transaksi barang keluar.")
+
+    # Produk dengan aktivitas sangat rendah (total keluar 1–5)
+    st.markdown("---")
+    st.subheader("📉 Produk dengan Aktivitas Sangat Rendah (Total Keluar ≤ 5)")
+
+    total_per_produk_valid = df.groupby('id_produk')['keluar'].sum()
+    produk_rendah = total_per_produk_valid[
+        (total_per_produk_valid > 0) & (total_per_produk_valid <= 5)
+    ].reset_index()
+    produk_rendah.columns = ['ID Produk', 'Total Keluar']
+    produk_rendah = produk_rendah.sort_values('Total Keluar').reset_index(drop=True)
+    produk_rendah.index = range(1, len(produk_rendah) + 1)
+
+    if len(produk_rendah) > 0:
+        st.info(
+            f"ℹ️ Terdapat **{len(produk_rendah)} produk** dengan total barang keluar antara 1–5 unit. "
+            "Produk-produk ini termasuk kategori pergerakan sangat lambat."
+        )
+        st.dataframe(produk_rendah, use_container_width=True)
+        csv_rendah = produk_rendah.to_csv().encode('utf-8')
+        st.download_button(
+            "⬇️ Download Produk Aktivitas Rendah",
+            csv_rendah, 'produk_aktivitas_rendah.csv', 'text/csv'
+        )
+    else:
+        st.success("✅ Tidak ada produk dengan total keluar ≤ 5.")
+
+    # ==========================================
+    # PIVOT TABLE
+    # ==========================================
+
+    st.markdown("---")
     st.subheader("📊 Pivot Table Barang Keluar per Bulan")
     st.caption("Setiap baris = 1 produk, setiap kolom = total keluar per bulan.")
     st.dataframe(pivot_table, use_container_width=True)
@@ -155,6 +286,25 @@ scaled_data          = scaler.fit_transform(filtered_data.drop(columns=['Total']
 with tab2:
 
     st.subheader("📌 Clustering Produk dengan K-Means")
+
+    # Info ringkas hasil filtering sebelum clustering
+    n_sebelum = len(pivot_table)
+    n_sesudah = len(filtered_data)
+    n_dibuang = n_sebelum - n_sesudah
+
+    col_cl0, col_cl1, col_cl2 = st.columns(3)
+    with col_cl0: st.metric("Total Produk (Pivot)", f"{n_sebelum:,}")
+    with col_cl1: st.metric("Produk Digunakan (Total > 1)", f"{n_sesudah:,}")
+    with col_cl2: st.metric("Produk Dikeluarkan (Total ≤ 1)", f"{n_dibuang:,}")
+
+    if n_dibuang > 0:
+        produk_dibuang = pivot_table[pivot_table['Total'] <= 1].index.tolist()
+        with st.expander(f"🔎 Lihat {n_dibuang} Produk yang Dikeluarkan dari Clustering (Total ≤ 1)"):
+            df_dibuang = pd.DataFrame({'ID Produk': produk_dibuang})
+            df_dibuang.index = range(1, len(df_dibuang) + 1)
+            st.dataframe(df_dibuang, use_container_width=True)
+
+    st.markdown("---")
 
     inertia = []
     for k in range(1, 10):
@@ -381,7 +531,6 @@ with tab3:
 
     # ==========================================
     # HELPER — TAMPILKAN FORECAST TERBAIK
-    # (urutan 1: ditampilkan duluan)
     # ==========================================
 
     def tampilkan_forecast_terbaik(nama_terbaik, fc_best, mae, rmse):
@@ -402,7 +551,6 @@ with tab3:
             csv_best, f"forecast_{produk}_{nama_terbaik}.csv", 'text/csv'
         )
 
-        # Grafik forecast ke depan
         fig_bst, ax_bst = plt.subplots(figsize=(12, 4.5))
         ax_bst.plot(data_produk.index, data_produk.values,
                     color=WARNA['aktual'], linewidth=2.5, marker='o', markersize=6,
@@ -423,7 +571,6 @@ with tab3:
         st.pyplot(fig_bst)
         plt.close(fig_bst)
 
-        # Ringkasan metrik per bulan
         st.markdown("---")
         st.subheader("📝 Ringkasan Hasil Analisis")
 
@@ -449,7 +596,6 @@ with tab3:
 
     # ==========================================
     # HELPER — TAMPILKAN PERBANDINGAN
-    # (urutan 2: ditampilkan setelah forecast)
     # ==========================================
 
     def tampilkan_perbandingan(hasil_eval, nama_terbaik):
@@ -473,7 +619,6 @@ with tab3:
             use_container_width=True
         )
 
-        # Grafik MAE & RMSE berdampingan
         metode_list = perbandingan['Metode'].tolist()
         warna_list  = [WARNA[m] for m in metode_list]
         alpha_list  = [1.0 if m == nama_terbaik else 0.4 for m in metode_list]
@@ -514,12 +659,6 @@ with tab3:
         st.pyplot(fig_cmp)
         plt.close(fig_cmp)
 
-        # ==========================================
-        # GRAFIK EVALUASI GABUNGAN
-        # Metode terbaik : tebal, solid, penuh warna
-        # Metode lain    : tipis, putus-putus, transparan
-        # ==========================================
-
         st.subheader("📉 Grafik Evaluasi Gabungan")
         st.caption("Metode terbaik ditampilkan paling menonjol — metode lain sebagai pembanding.")
 
@@ -530,7 +669,6 @@ with tab3:
         ax_ev.plot(test.index, test.values, color=WARNA['test'],
                    linewidth=2.5, marker='o', markersize=7, label='Data Test (Aktual)')
 
-        # Metode lain — pudar, di belakang
         for nm, v in hasil_eval.items():
             if nm != nama_terbaik:
                 ax_ev.plot(
@@ -541,7 +679,6 @@ with tab3:
                     label=nm
                 )
 
-        # Metode terbaik — tebal, solid, di depan
         ax_ev.plot(
             hasil_eval[nama_terbaik]['forecast'].index,
             hasil_eval[nama_terbaik]['forecast'].values,
@@ -577,14 +714,11 @@ with tab3:
         rmse_terbaik = hasil_eval[nama_terbaik]['rmse']
         fc_best      = hasil_future[nama_terbaik]
 
-        # 1. Tabel perbandingan + grafik evaluasi gabungan dulu
         tampilkan_perbandingan(hasil_eval, nama_terbaik)
 
-        # 2. Baru umumkan metode terbaik
         st.success(f"✅ Berdasarkan evaluasi di atas, sistem memilih metode terbaik: "
                    f"**{nama_terbaik}** (MAE = {mae_terbaik:.2f}  |  RMSE = {rmse_terbaik:.2f})")
 
-        # 3. Forecast ke depan
         tampilkan_forecast_terbaik(nama_terbaik, fc_best, mae_terbaik, rmse_terbaik)
 
     # ==========================================
@@ -629,7 +763,6 @@ with tab3:
         mae  = mean_absolute_error(test.values, fc_eval.values)
         rmse = np.sqrt(mean_squared_error(test.values, fc_eval.values))
 
-        # Tabel & metrik evaluasi
         c1, c2 = st.columns(2)
         with c1: st.metric("MAE",  f"{mae:.2f}")
         with c2: st.metric("RMSE", f"{rmse:.2f}")
@@ -644,7 +777,6 @@ with tab3:
         st.subheader("📋 Perbandingan Forecast vs Aktual (Periode Evaluasi)")
         st.dataframe(eval_df, use_container_width=True)
 
-        # Grafik evaluasi
         fig_e, ax_e = plt.subplots(figsize=(12, 4.5))
         ax_e.plot(train.index, train.values, color=WARNA['train'],
                   linewidth=2.5, marker='o', markersize=5, label='Data Train')
@@ -663,5 +795,4 @@ with tab3:
         st.pyplot(fig_e)
         plt.close(fig_e)
 
-        # Forecast ke depan
         tampilkan_forecast_terbaik(nama, fc_future, mae, rmse)
