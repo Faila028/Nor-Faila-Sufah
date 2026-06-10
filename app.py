@@ -189,6 +189,7 @@ with tab1:
             f"⚠️ Ditemukan **{total_missing:,} baris tidak valid** "
             f"({missing_id_produk:,} baris ID produk kosong & "
             f"{missing_keluar:,} baris nilai keluar kosong). "
+            "Baris tersebut **tidak diikutsertakan** dalam proses analisis."
         )
     else:
         st.success("✅ Tidak ada missing values. Data siap dianalisis.")
@@ -211,11 +212,21 @@ with tab1:
             "sepanjang periode Januari 2023 – Desember 2025."
         )
         st.info(
-            "ℹ️ Produk-produk ini tidak diikutsertakan dalam proses analisis "
+            "ℹ️ Produk-produk tersebut tidak diikutsertakan dalam proses analisis "
             "clustering maupun forecasting karena tidak memiliki data historis yang "
             "dapat digunakan untuk membentuk pola pergerakan barang."
         )
-        st.dataframe(df_tidak_terjual, use_container_width=True)
+        # Bagi jadi 2 kolom berdampingan
+        separuh = 7
+        df_kiri  = df_tidak_terjual.iloc[:separuh]
+        df_kanan = df_tidak_terjual.iloc[separuh:]
+        df_kanan.index = range(separuh + 1, len(produk_tidak_terjual) + 1)
+
+        col_k1, col_k2 = st.columns(2)
+        with col_k1:
+            st.dataframe(df_kiri, use_container_width=True)
+        with col_k2:
+            st.dataframe(df_kanan, use_container_width=True)
 
         csv_tidak_terjual = df_tidak_terjual.to_csv().encode('utf-8')
         st.download_button(
