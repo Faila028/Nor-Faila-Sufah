@@ -207,6 +207,9 @@ with tab1:
     st.download_button("⬇️ Download Pivot Table", csv_pivot,
                        'pivot_barang_keluar.csv', 'text/csv')
 
+    st.caption(f"📦 Total produk dalam pivot table: **{len(pivot_table):,} produk** "
+               f"dari **{len(urutan_bulan)} bulan** periode Januari 2023 – Desember 2025.")
+
     # ==========================================
     # PRODUK TIDAK PERNAH TERJUAL
     # ==========================================
@@ -305,7 +308,7 @@ with tab2:
         km.fit(scaled_data)
         inertia.append(km.inertia_)
 
-    fig_el, ax_el = plt.subplots(figsize=(7, 4))
+    fig_el, ax_el = plt.subplots(figsize=(5, 3))
     ax_el.plot(range(1, 10), inertia, marker='o', color=WARNA['aktual'],
                linewidth=2.5, markersize=8, markerfacecolor='white', markeredgewidth=2.5)
     ax_el.fill_between(range(1, 10), inertia, alpha=0.08, color=WARNA['aktual'])
@@ -314,7 +317,9 @@ with tab2:
     ax_el.grid(axis='x', linestyle='--', alpha=0.3)
     ax_el.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f'{x:,.0f}'))
     plt.tight_layout()
-    st.pyplot(fig_el)
+    col_elbow, _ = st.columns([1, 1])
+    with col_elbow:
+        st.pyplot(fig_el)
     plt.close(fig_el)
 
     st.caption("💡 Pilih jumlah cluster di titik 'siku' — di mana penurunan inertia mulai melambat.")
