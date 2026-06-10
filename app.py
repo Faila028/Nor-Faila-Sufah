@@ -329,28 +329,29 @@ with tab2:
         st.dataframe(tabel_cluster, use_container_width=True)
     with col_chart:
         kategori_list = tabel_cluster['Kategori'].tolist()
-        warna_cl = [warna_map.get(k, '#888888') for k in kategori_list]
+        jumlah_list   = tabel_cluster['Jumlah Produk'].tolist()
+        warna_cl      = [warna_map.get(k, '#888888') for k in kategori_list]
 
         fig_cl, ax_cl = plt.subplots(figsize=(6, 3.2))
-        jumlah_list   = tabel_cluster['Jumlah Produk'].tolist()
-        n             = len(kategori_list)
-        posisi        = list(range(n))
+        # Urutan dari bawah ke atas: Slow, Medium, Fast (agar Fast di atas)
+        kategori_rev = kategori_list[::-1]
+        jumlah_rev   = jumlah_list[::-1]
+        warna_rev    = [warna_map.get(k, '#888888') for k in kategori_rev]
+        posisi       = list(range(len(kategori_rev)))
 
-        # Plot pakai posisi numerik supaya label tidak ikut angka cluster KMeans
         bars = ax_cl.barh(
-            posisi,
-            jumlah_list,
-            color=warna_cl, height=0.5, edgecolor='white'
+            posisi, jumlah_rev,
+            color=warna_rev, height=0.5, edgecolor='white'
         )
         ax_cl.bar_label(bars, fmt='%d', padding=5, fontsize=11, fontweight='bold')
         ax_cl.set_yticks(posisi)
-        ax_cl.set_yticklabels(kategori_list)
+        ax_cl.set_yticklabels(kategori_rev)
         style_ax(ax_cl, title='Distribusi Produk per Cluster', xlabel='Jumlah Produk')
         ax_cl.grid(axis='x', linestyle='--', alpha=0.4, color='#cccccc')
         ax_cl.grid(axis='y', linestyle='', alpha=0)
         ax_cl.tick_params(axis='x', rotation=0)
         ax_cl.xaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f'{int(x):,}'))
-        ax_cl.set_xlim(0, tabel_cluster['Jumlah Produk'].max() * 1.25)
+        ax_cl.set_xlim(0, max(jumlah_list) * 1.25)
         plt.tight_layout()
         st.pyplot(fig_cl)
         plt.close(fig_cl)
