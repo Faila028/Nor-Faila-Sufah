@@ -337,7 +337,7 @@ with tab2:
         kategori_rev = kategori_list[::-1]
         jumlah_rev   = jumlah_list[::-1]
         warna_rev    = [warna_map.get(k, '#888888') for k in kategori_rev]
-        posisi       = list(range(len(kategori_rev)))
+        posisi       = list(range(1, len(kategori_rev) + 1))
 
         bars = ax_cl.barh(
             posisi, jumlah_rev,
