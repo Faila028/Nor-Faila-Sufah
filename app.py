@@ -101,9 +101,6 @@ missing_id_produk = df_raw['id_produk'].isna().sum()
 missing_keluar    = df_raw['keluar'].isna().sum()
 total_missing     = missing_id_produk + missing_keluar
 
-# Produk dengan id_produk kosong
-baris_id_kosong = df_raw[df_raw['id_produk'].isna()].copy()
-
 # Produk yang tidak pernah terjual sama sekali (keluar = 0 atau NaN semua bulan)
 # Hitung per produk: total keluar (NaN dianggap 0)
 total_per_produk = df_raw.groupby('id_produk')['keluar'].sum(min_count=1).fillna(0)
@@ -197,17 +194,23 @@ with tab1:
     else:
         st.success("✅ Tidak ada missing values. Data siap dianalisis.")
 
-    # Detail baris dengan id_produk kosong
-    if missing_id_produk > 0:
-        with st.expander(f"🔎 Lihat {missing_id_produk} Baris dengan ID Produk Kosong"):
-            st.dataframe(baris_id_kosong, use_container_width=True)
-            csv_missing = baris_id_kosong.to_csv(index=False).encode('utf-8')
-            st.download_button(
-                "⬇️ Download Baris ID Produk Kosong",
-                csv_missing, 'baris_id_kosong.csv', 'text/csv'
-            )
+    # ==========================================
+    # PIVOT TABLE
+    # ==========================================
 
-    # Produk yang tidak pernah terjual
+    st.markdown("---")
+    st.subheader("📊 Pivot Table Barang Keluar per Bulan")
+    st.caption("Setiap baris = 1 produk, setiap kolom = total keluar per bulan.")
+    st.dataframe(pivot_table, use_container_width=True)
+
+    csv_pivot = pivot_table.to_csv().encode('utf-8')
+    st.download_button("⬇️ Download Pivot Table", csv_pivot,
+                       'pivot_barang_keluar.csv', 'text/csv')
+
+    # ==========================================
+    # PRODUK TIDAK PERNAH TERJUAL
+    # ==========================================
+
     st.markdown("---")
     st.subheader("📭 Produk Tidak Pernah Terjual")
 
@@ -231,7 +234,10 @@ with tab1:
     else:
         st.success("✅ Semua produk memiliki setidaknya satu transaksi barang keluar.")
 
-    # Produk dengan aktivitas sangat rendah (total keluar 1–5)
+    # ==========================================
+    # PRODUK AKTIVITAS SANGAT RENDAH
+    # ==========================================
+
     st.markdown("---")
     st.subheader("📉 Produk dengan Aktivitas Sangat Rendah (Total Keluar ≤ 5)")
 
@@ -256,19 +262,6 @@ with tab1:
         )
     else:
         st.success("✅ Tidak ada produk dengan total keluar ≤ 5.")
-
-    # ==========================================
-    # PIVOT TABLE
-    # ==========================================
-
-    st.markdown("---")
-    st.subheader("📊 Pivot Table Barang Keluar per Bulan")
-    st.caption("Setiap baris = 1 produk, setiap kolom = total keluar per bulan.")
-    st.dataframe(pivot_table, use_container_width=True)
-
-    csv_pivot = pivot_table.to_csv().encode('utf-8')
-    st.download_button("⬇️ Download Pivot Table", csv_pivot,
-                       'pivot_barang_keluar.csv', 'text/csv')
 
 # ==========================================
 # PERSIAPAN CLUSTERING
