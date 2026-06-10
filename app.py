@@ -210,6 +210,7 @@ with tab1:
         st.warning(
             f"⚠️ Terdapat **{len(produk_tidak_terjual)} produk** dengan total barang keluar = 0 "
             "sepanjang periode Januari 2023 – Desember 2025."
+            "ℹ️ Produk-produk tersebut tidak diikutsertakan dalam proses analisis clustering maupun forecasting karena tidak memiliki data historis yang dapat digunakan untuk membentuk pola pergerakan barang.
         )
         st.dataframe(df_tidak_terjual, use_container_width=True)
 
