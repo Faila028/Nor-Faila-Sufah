@@ -212,7 +212,7 @@ with tab1:
             "sepanjang periode Januari 2023 – Desember 2025."
         )
         st.info(
-            "ℹ️ Produk-produk tersebut tidak diikutsertakan dalam proses analisis "
+            "ℹ️ Produk-produk ini tidak diikutsertakan dalam proses analisis "
             "clustering maupun forecasting karena tidak memiliki data historis yang "
             "dapat digunakan untuk membentuk pola pergerakan barang."
         )
