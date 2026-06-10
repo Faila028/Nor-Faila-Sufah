@@ -216,17 +216,15 @@ with tab1:
             "clustering maupun forecasting karena tidak memiliki data historis yang "
             "dapat digunakan untuk membentuk pola pergerakan barang."
         )
-        # Bagi jadi 2 kolom berdampingan
-        separuh = 7
-        df_kiri  = df_tidak_terjual.iloc[:separuh]
-        df_kanan = df_tidak_terjual.iloc[separuh:]
-        df_kanan.index = range(separuh + 1, len(produk_tidak_terjual) + 1)
-
-        col_k1, col_k2 = st.columns(2)
-        with col_k1:
-            st.dataframe(df_kiri, use_container_width=True)
-        with col_k2:
-            st.dataframe(df_kanan, use_container_width=True)
+        # Bagi jadi 4 kolom, masing-masing 7 produk
+        col_k1, col_k2, col_k3, col_k4 = st.columns(4)
+        for i, col in enumerate([col_k1, col_k2, col_k3, col_k4]):
+            start = i * 7
+            end   = start + 7
+            bagian = df_tidak_terjual.iloc[start:end].copy()
+            bagian.index = range(start + 1, start + len(bagian) + 1)
+            with col:
+                st.dataframe(bagian, use_container_width=True)
 
         csv_tidak_terjual = df_tidak_terjual.to_csv().encode('utf-8')
         st.download_button(
