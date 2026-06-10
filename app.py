@@ -332,12 +332,19 @@ with tab2:
         warna_cl = [warna_map.get(k, '#888888') for k in kategori_list]
 
         fig_cl, ax_cl = plt.subplots(figsize=(6, 3.2))
+        jumlah_list   = tabel_cluster['Jumlah Produk'].tolist()
+        n             = len(kategori_list)
+        posisi        = list(range(n))
+
+        # Plot pakai posisi numerik supaya label tidak ikut angka cluster KMeans
         bars = ax_cl.barh(
-            kategori_list[::-1],
-            tabel_cluster['Jumlah Produk'].tolist()[::-1],
-            color=warna_cl[::-1], height=0.5, edgecolor='white'
+            posisi,
+            jumlah_list,
+            color=warna_cl, height=0.5, edgecolor='white'
         )
         ax_cl.bar_label(bars, fmt='%d', padding=5, fontsize=11, fontweight='bold')
+        ax_cl.set_yticks(posisi)
+        ax_cl.set_yticklabels(kategori_list)
         style_ax(ax_cl, title='Distribusi Produk per Cluster', xlabel='Jumlah Produk')
         ax_cl.grid(axis='x', linestyle='--', alpha=0.4, color='#cccccc')
         ax_cl.grid(axis='y', linestyle='', alpha=0)
